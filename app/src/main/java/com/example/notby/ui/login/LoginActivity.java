@@ -32,7 +32,7 @@ public class LoginActivity extends AppCompatActivity {
 
     private static final String TAG = "LoginActivity";
     private static final int RC_SIGN_IN = 9001;
-    private static final String API_URL = "http://10.0.2.2:5010/auth/mobile/google";
+    private static final String API_URL = "https://notby-be-8q9y.onrender.com/auth/mobile/google";
 
     private GoogleSignInClient mGoogleSignInClient;
     private RequestQueue mRequestQueue;
@@ -43,7 +43,7 @@ public class LoginActivity extends AppCompatActivity {
         setContentView(R.layout.activity_login);
 
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestIdToken("string")   //thay clientId vo day
+                .requestIdToken("391965880918-9b0jq9cvolrov0lpa36issb2t8edq76s.apps.googleusercontent.com")   //thay clientId vo day
                 .requestEmail()
                 .build();
 

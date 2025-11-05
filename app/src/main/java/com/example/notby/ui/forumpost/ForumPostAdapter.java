@@ -3,79 +3,91 @@ package com.example.notby.ui.forumpost;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.TextView;
-
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
-
-import com.bumptech.glide.Glide;
 import com.example.notby.R;
-import com.example.notby.model.ForumPost;
-
+import com.example.notby.data.model.ForumPost;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
-public class ForumPostAdapter extends RecyclerView.Adapter<ForumPostAdapter.ForumPostViewHolder> {
+public class ForumPostAdapter extends RecyclerView.Adapter<ForumPostAdapter.ViewHolder> {
+    private List<ForumPost> posts = new ArrayList<>();
 
-    private List<ForumPost> forumPostList;
-
-    public ForumPostAdapter(List<ForumPost> forumPostList) {
-        this.forumPostList = forumPostList;
+    public ForumPostAdapter(List<ForumPost> posts) {
+        this.posts = new ArrayList<>(posts);
     }
 
     @NonNull
     @Override
-    public ForumPostViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_forum_post, parent, false);
-        return new ForumPostViewHolder(view);
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.item_forum_post, parent, false);
+        return new ViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ForumPostViewHolder holder, int position) {
-        ForumPost forumPost = forumPostList.get(position);
-        holder.bind(forumPost);
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        ForumPost post = posts.get(position);
+        holder.titleView.setText(post.getTitle());
+        holder.contentView.setText(post.getContent());
+        holder.likesView.setText(String.format(Locale.getDefault(), "Likes: %d", post.getLikes()));
+        holder.viewsView.setText(String.format(Locale.getDefault(), "Views: %d", post.getViews()));
     }
 
     @Override
     public int getItemCount() {
-        return forumPostList.size();
+        return posts.size();
     }
 
-    static class ForumPostViewHolder extends RecyclerView.ViewHolder {
-        private ImageView authorImage;
-        private TextView authorName;
-        private TextView postDate;
-        private TextView postTitle;
-        private TextView postContent;
-        private TextView commentsCount;
-        private TextView viewsCount;
-        private TextView likesCount;
+    public void updatePosts(final List<ForumPost> newPosts) {
+        if (newPosts == null) return;
 
-        public ForumPostViewHolder(@NonNull View itemView) {
-            super(itemView);
-            authorImage = itemView.findViewById(R.id.authorImage);
-            authorName = itemView.findViewById(R.id.authorName);
-            postDate = itemView.findViewById(R.id.postDate);
-            postTitle = itemView.findViewById(R.id.postTitle);
-            postContent = itemView.findViewById(R.id.postContent);
-            commentsCount = itemView.findViewById(R.id.commentsCount);
-            viewsCount = itemView.findViewById(R.id.viewsCount);
-            likesCount = itemView.findViewById(R.id.likesCount);
-        }
-
-        public void bind(ForumPost forumPost) {
-            authorName.setText(forumPost.getAuthor().getFullName());
-            postDate.setText(forumPost.getCreatedAt()); // You might want to format this date
-            postTitle.setText(forumPost.getTitle());
-            postContent.setText(forumPost.getContent());
-            viewsCount.setText(String.valueOf(forumPost.getViews()));
-            likesCount.setText(String.valueOf(forumPost.getLikes()));
-
-            if (forumPost.getAuthor().getPhoto() != null && !forumPost.getAuthor().getPhoto().isEmpty()) {
-                Glide.with(itemView.getContext())
-                        .load(forumPost.getAuthor().getPhoto())
-                        .into(authorImage);
+        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffUtil.Callback() {
+            @Override
+            public int getOldListSize() {
+                return posts.size();
             }
+
+            @Override
+            public int getNewListSize() {
+                return newPosts.size();
+            }
+
+            @Override
+            public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+                return posts.get(oldItemPosition).getId().equals(newPosts.get(newItemPosition).getId());
+            }
+
+            @Override
+            public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+                ForumPost oldPost = posts.get(oldItemPosition);
+                ForumPost newPost = newPosts.get(newItemPosition);
+                return oldPost.getTitle().equals(newPost.getTitle())
+                    && oldPost.getContent().equals(newPost.getContent())
+                    && oldPost.getLikes() == newPost.getLikes()
+                    && oldPost.getViews() == newPost.getViews();
+            }
+        });
+
+        posts = new ArrayList<>(newPosts);
+        diffResult.dispatchUpdatesTo(this);
+    }
+
+    static class ViewHolder extends RecyclerView.ViewHolder {
+        TextView titleView;
+        TextView contentView;
+        TextView likesView;
+        TextView viewsView;
+
+        ViewHolder(View itemView) {
+            super(itemView);
+            titleView = itemView.findViewById(R.id.titleView);
+            contentView = itemView.findViewById(R.id.contentView);
+            likesView = itemView.findViewById(R.id.likesView);
+            viewsView = itemView.findViewById(R.id.viewsView);
         }
     }
 }
