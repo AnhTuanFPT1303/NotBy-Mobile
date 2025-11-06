@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/nav_footer_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?android:attr/selectableItemBackground"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/parent_initial"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_centerVertical="true"
+        android:background="@drawable/circular_background_gray"
+        android:gravity="center"
+        android:text="N"
+        android:textColor="@android:color/black"
+        android:textSize="20sp" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_marginStart="12dp"
+        android:layout_toStartOf="@+id/footer_arrow"
+        android:layout_toEndOf="@+id/parent_initial"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/parent_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Nguyễn Trung"
+            android:textColor="@android:color/black"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/parent_role"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Parent - Quản lý 2 bé" />
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/footer_arrow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_centerVertical="true"
+        android:src="@drawable/ic_arrow_drop_down" />
+
+</RelativeLayout>
