@@ -16,7 +16,9 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.example.notby.R;
+import com.example.notby.data.TokenManager;
 import com.example.notby.ui.forumpost.ForumPostActivity;
+import com.example.notby.utils.ResponseLogger;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -36,11 +38,14 @@ public class LoginActivity extends AppCompatActivity {
 
     private GoogleSignInClient mGoogleSignInClient;
     private RequestQueue mRequestQueue;
+    private TokenManager tokenManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+
+        tokenManager = new TokenManager(this);
 
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestIdToken("391965880918-9b0jq9cvolrov0lpa36issb2t8edq76s.apps.googleusercontent.com")   //thay clientId vo day
@@ -49,7 +54,7 @@ public class LoginActivity extends AppCompatActivity {
 
         mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
 
-        SignInButton signInButton = findViewById(R.id.sign_in_button);
+        SignInButton signInButton = findViewById(R.id.btnLogin);
         signInButton.setSize(SignInButton.SIZE_STANDARD);
         signInButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -82,7 +87,6 @@ public class LoginActivity extends AppCompatActivity {
             String idToken = account.getIdToken();
             sendIdTokenToServer(idToken);
         } catch (ApiException e) {
-            Log.w(TAG, "signInResult:failed code=" + e.getStatusCode());
             Toast.makeText(this, "Google Sign In failed.", Toast.LENGTH_SHORT).show();
         }
     }
@@ -99,13 +103,78 @@ public class LoginActivity extends AppCompatActivity {
                 new Response.Listener<JSONObject>() {
                     @Override
                     public void onResponse(JSONObject response) {
-                        Log.d(TAG, "Login successful: " + response.toString());
+                        // Log the complete response structure
+                        ResponseLogger.logAllFields(TAG, response);
+
+                        try {
+                            // Try multiple possible response structures
+                            String jwtToken = null;
+                            String userId = null;
+                            String email = null;
+                            String name = null;
+
+                            // Check if response has 'data' wrapper
+                            if (response.has("data")) {
+                                JSONObject data = response.getJSONObject("data");
+                                jwtToken = data.optString("token", null);
+                                if (jwtToken == null) jwtToken = data.optString("accessToken", null);
+
+                                if (data.has("user")) {
+                                    JSONObject user = data.getJSONObject("user");
+                                    userId = user.optString("id", null);
+                                    if (userId == null) userId = user.optString("_id", null);
+                                    email = user.optString("email", "");
+                                    name = user.optString("name", "");
+                                } else {
+                                    // User data might be directly in data
+                                    userId = data.optString("id", null);
+                                    if (userId == null) userId = data.optString("_id", null);
+                                    email = data.optString("email", "");
+                                    name = data.optString("name", "");
+                                }
+                            } else {
+                                // Token might be at root level
+                                jwtToken = response.optString("token", null);
+                                if (jwtToken == null) jwtToken = response.optString("accessToken", null);
+
+                                if (response.has("user")) {
+                                    JSONObject user = response.getJSONObject("user");
+                                    userId = user.optString("id", null);
+                                    if (userId == null) userId = user.optString("_id", null);
+                                    email = user.optString("email", "");
+                                    name = user.optString("name", "");
+                                } else {
+                                    // User data might be at root level
+                                    userId = response.optString("id", null);
+                                    if (userId == null) userId = response.optString("_id", null);
+                                    email = response.optString("email", "");
+                                    name = response.optString("name", "");
+                                }
+                            }
+
+                            if (jwtToken != null && jwtToken.length() > 0) {
+                                tokenManager.saveToken(jwtToken);
+                            } else {
+                                Log.e(TAG, "No token found in response!");
+                            }
+
+                            if (userId != null && !userId.isEmpty()) {
+                                tokenManager.saveUserData(userId, email, name);
+                            } else {
+                                Log.e(TAG, "No user ID found in response!");
+                            }
+
+                        } catch (JSONException e) {
+                            Log.e(TAG, "Error parsing response: " + e.getMessage());
+                            e.printStackTrace();
+                        }
+
                         Toast.makeText(LoginActivity.this, "Login successful!", Toast.LENGTH_SHORT).show();
 
-                        // Simply proceed to ForumPostActivity without expecting a token
+                        // Proceed to ForumPostActivity
                         Intent intent = new Intent(LoginActivity.this, ForumPostActivity.class);
                         startActivity(intent);
-                        finish(); // Finish LoginActivity so the user can't go back to it
+                        finish();
                     }
                 },
                 new Response.ErrorListener() {

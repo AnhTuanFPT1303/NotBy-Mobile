@@ -1,16 +1,226 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
+    android:background="@color/white"
+    android:padding="24dp"
     tools:context=".ui.login.LoginActivity">
 
-    <com.google.android.gms.common.SignInButton
-        android:id="@+id/sign_in_button"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_centerInParent="true" />
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:paddingTop="24dp">
 
-</RelativeLayout>
+        <!-- Logo -->
+        <ImageView
+            android:id="@+id/logo"
+            android:layout_width="84dp"
+            android:layout_height="84dp"
+            android:src="@drawable/ic_baby_face"
+            android:scaleType="centerCrop"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/circle_gradient"
+            android:padding="12dp" />
+
+        <!-- App title -->
+        <TextView
+            android:id="@+id/appTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="NoteBaby"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="#111827"
+            android:layout_marginTop="12dp" />
+
+        <!-- Subtitle -->
+        <TextView
+            android:id="@+id/subtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Lưu giữ kỷ niệm quý giá của bé"
+            android:textSize="14sp"
+            android:textColor="#6B7280"
+            android:layout_marginTop="6dp" />
+
+        <!-- Card Container -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_marginTop="18dp"
+            android:layout_marginBottom="16dp"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="10dp"
+            app:cardElevation="6dp"
+            android:padding="18dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/welcome"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Chào mừng bạn!"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:layout_marginBottom="12dp"
+                    android:textColor="#111827" />
+
+                <!-- Simple segmented tabs -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:orientation="horizontal"
+                    android:background="#F3F4F6"
+                    android:padding="4dp"
+                    android:layout_marginBottom="16dp">
+
+                    <TextView
+                        android:id="@+id/tabLogin"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="Đăng Nhập"
+                        android:textStyle="bold"
+                        android:background="#FFFFFF"
+                        android:padding="8dp"
+                        android:textColor="#111827" />
+
+                    <TextView
+                        android:id="@+id/tabRegister"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="Đăng Ký"
+                        android:textColor="#6B7280"
+                        android:padding="8dp" />
+
+                </LinearLayout>
+
+                <!-- Email input -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Email"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    app:boxStrokeColor="#E5E7EB"
+                    app:boxBackgroundMode="outline"
+                    android:layout_marginBottom="12dp">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/inputEmail"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:inputType="textEmailAddress"
+                        android:drawableStart="@drawable/ic_email"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
+                        android:backgroundTint="#FFFFFF" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Password input -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Mật khẩu"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    app:boxStrokeColor="#E5E7EB"
+                    app:endIconMode="password_toggle"
+                    app:boxBackgroundMode="outline"
+                    android:layout_marginBottom="8dp">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/inputPassword"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:inputType="textPassword"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp">
+
+                    <CheckBox
+                        android:id="@+id/rememberCheck"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Ghi nhớ đăng nhập"
+                        android:textColor="#374151"
+                        android:buttonTint="#06b6d4" />
+
+                </LinearLayout>
+
+                <com.google.android.gms.common.SignInButton
+                    android:id="@+id/btnLogin"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:backgroundTint="#06a6ff"
+                    android:text="Đăng Nhập"
+                    android:textColor="#FFFFFF"
+                    android:textAllCaps="false"
+                    android:layout_marginBottom="12dp" />
+
+                <!-- Divider with text -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginBottom="12dp">
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1"
+                        android:background="#E5E7EB" />
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1"
+                        android:background="#E5E7EB" />
+
+                </LinearLayout>
+
+                <!-- Social buttons -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:weightSum="2"/>
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <TextView
+            android:id="@+id/footer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="© 2024 NoteBaby. Được tạo với ❤️ cho các bậc phụ huynh"
+            android:textColor="#9CA3AF"
+            android:textSize="12sp"
+            android:layout_marginTop="6dp"
+            android:gravity="center" />
+
+    </LinearLayout>
+
+</ScrollView>
