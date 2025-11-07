@@ -8,6 +8,8 @@ public class ApiClient {
     private static Retrofit retrofit = null;
     private static ForumPostApi forumPostApi = null;
     private static UserApi userApi = null;
+    private static MediafileApi mediafileApi = null;
+    private static CloudinaryApi cloudinaryApi = null;
 
     public static Retrofit getClient() {
         if (retrofit == null) {
@@ -31,5 +33,19 @@ public class ApiClient {
             userApi = getClient().create(UserApi.class);
         }
         return userApi;
+    }
+
+    public static MediafileApi getMediafileApi() {
+        if (mediafileApi == null) {
+            mediafileApi = getClient().create(MediafileApi.class);
+        }
+        return mediafileApi;
+    }
+
+    public static CloudinaryApi getCloudinaryApi() {
+        if (cloudinaryApi == null) {
+            cloudinaryApi = getClient().create(CloudinaryApi.class);
+        }
+        return cloudinaryApi;
     }
 }

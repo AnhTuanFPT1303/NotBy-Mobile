@@ -12,6 +12,7 @@ import com.example.notby.data.model.ForumPost;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 public class ForumPostAdapter extends RecyclerView.Adapter<ForumPostAdapter.ViewHolder> {
     private List<ForumPost> posts = new ArrayList<>();
@@ -31,8 +32,8 @@ public class ForumPostAdapter extends RecyclerView.Adapter<ForumPostAdapter.View
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         ForumPost post = posts.get(position);
-        holder.titleView.setText(post.getTitle());
-        holder.contentView.setText(post.getContent());
+        holder.titleView.setText(post.getTitle() != null ? post.getTitle() : "");
+        holder.contentView.setText(post.getContent() != null ? post.getContent() : "");
         holder.likesView.setText(String.format(Locale.getDefault(), "Likes: %d", post.getLikes()));
         holder.viewsView.setText(String.format(Locale.getDefault(), "Views: %d", post.getViews()));
     }
@@ -65,8 +66,8 @@ public class ForumPostAdapter extends RecyclerView.Adapter<ForumPostAdapter.View
             public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
                 ForumPost oldPost = posts.get(oldItemPosition);
                 ForumPost newPost = newPosts.get(newItemPosition);
-                return oldPost.getTitle().equals(newPost.getTitle())
-                    && oldPost.getContent().equals(newPost.getContent())
+                return Objects.equals(oldPost.getTitle(), newPost.getTitle())
+                    && Objects.equals(oldPost.getContent(), newPost.getContent())
                     && oldPost.getLikes() == newPost.getLikes()
                     && oldPost.getViews() == newPost.getViews();
             }
