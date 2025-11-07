@@ -44,10 +44,18 @@
         android:layout_gravity="start"
         android:background="@android:color/white"
         app:headerLayout="@layout/nav_header"
-        app:footerLayout="@layout/nav_footer" 
         app:menu="@menu/drawer_nav_menu"
         app:itemIconTint="@color/nav_item_icon_tint"
         app:itemTextColor="@color/nav_item_text_tint"
-        app:itemBackground="@drawable/nav_item_background" />
+        app:itemBackground="@drawable/nav_item_background">
+
+        <!-- SỬA LỖI: Chèn layout footer vào đây -->
+        <include
+            layout="@layout/nav_footer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom" />
+
+    </com.google.android.material.navigation.NavigationView>
 
 </androidx.drawerlayout.widget.DrawerLayout>
