@@ -31,4 +31,3 @@ public interface ForumCommentApi {
     @DELETE("ForumComment/{id}")
     Call<ApiResponse<Void>> delete(@Path("id") String id);
 }
-

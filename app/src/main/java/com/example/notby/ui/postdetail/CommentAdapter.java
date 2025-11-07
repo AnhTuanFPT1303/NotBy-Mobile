@@ -43,12 +43,17 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
         holder.commentContent.setText(comment.getContent() != null ? comment.getContent() : "");
 
         // Set author name
-        User author = comment.getCreatedByUser();
-        if (author != null && author.getUsername() != null) {
-            holder.commentAuthor.setText(author.getUsername());
+        String authorName = "Anonymous";
+        User user = comment.getCreatedByUser();
+        if (user != null && user.getUsername() != null && !user.getUsername().isEmpty()) {
+            authorName = user.getUsername();
         } else {
-            holder.commentAuthor.setText("Anonymous");
+            String authorId = comment.getCreatedById();
+            if (authorId != null && !authorId.isEmpty()) {
+                authorName = authorId;
+            }
         }
+        holder.commentAuthor.setText(authorName);
 
         // Set time
         holder.commentTime.setText(formatTime(comment.getCreatedAt()));
@@ -130,4 +135,3 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
         }
     }
 }
-
