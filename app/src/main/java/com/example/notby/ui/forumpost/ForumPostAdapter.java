@@ -1,5 +1,7 @@
 package com.example.notby.ui.forumpost;
 
+import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,13 +11,14 @@ import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.notby.R;
 import com.example.notby.data.model.ForumPost;
+import com.example.notby.ui.postdetail.PostDetailActivity;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
 public class ForumPostAdapter extends RecyclerView.Adapter<ForumPostAdapter.ViewHolder> {
-    private List<ForumPost> posts = new ArrayList<>();
+    private List<ForumPost> posts;
 
     public ForumPostAdapter(List<ForumPost> posts) {
         this.posts = new ArrayList<>(posts);
@@ -36,6 +39,14 @@ public class ForumPostAdapter extends RecyclerView.Adapter<ForumPostAdapter.View
         holder.contentView.setText(post.getContent() != null ? post.getContent() : "");
         holder.likesView.setText(String.format(Locale.getDefault(), "Likes: %d", post.getLikes()));
         holder.viewsView.setText(String.format(Locale.getDefault(), "Views: %d", post.getViews()));
+
+        // Set click listener to open post detail
+        holder.itemView.setOnClickListener(v -> {
+            Context context = v.getContext();
+            Intent intent = new Intent(context, PostDetailActivity.class);
+            intent.putExtra(PostDetailActivity.EXTRA_POST_ID, post.getId());
+            context.startActivity(intent);
+        });
     }
 
     @Override
@@ -77,7 +88,7 @@ public class ForumPostAdapter extends RecyclerView.Adapter<ForumPostAdapter.View
         diffResult.dispatchUpdatesTo(this);
     }
 
-    static class ViewHolder extends RecyclerView.ViewHolder {
+    public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView titleView;
         TextView contentView;
         TextView likesView;

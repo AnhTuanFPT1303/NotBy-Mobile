@@ -26,6 +26,8 @@
         </activity>
         
         <activity android:name=".ui.forumpost.ForumPostActivity" />
+        <activity android:name=".ui.postdetail.PostDetailActivity"
+            android:parentActivityName=".ui.forumpost.ForumPostActivity" />
 
     </application>
 
