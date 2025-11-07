@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:id="@+id/group_main_menu"
+        android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_overview"
+            android:icon="@drawable/ic_dashboard"
+            android:title="Tổng quan" />
+        <item
+            android:id="@+id/nav_stats"
+            android:icon="@drawable/ic_stats"
+            android:title="Thống kê" />
+        <item
+            android:id="@+id/nav_development_diary"
+            android:icon="@drawable/ic_book"
+            android:title="Nhật ký phát triển" />
+        <item
+            android:id="@+id/nav_health_tracking"
+            android:icon="@drawable/ic_heart"
+            android:title="Theo dõi sức khỏe" />
+        <!-- DÒNG NÀY ĐÃ ĐƯỢC SỬA LỖI - THÊM DẤU CÁCH SAU 'item' -->
+        <item
+            android:id="@+id/nav_schedule"
+            android:icon="@drawable/ic_calendar"
+            android:title="Lịch học / Thời khóa biểu" />
+    </group>
+
+    <item android:title="Thao tác nhanh">
+        <menu>
+            <item
+                android:id="@+id/nav_add_photo"
+                android:icon="@drawable/ic_camera"
+                android:title="Thêm ảnh mới" />
+            <item
+                android:id="@+id/nav_add_note"
+                android:icon="@drawable/ic_edit"
+                android:title="Ghi chú phát triển" />
+            <item
+                android:id="@+id/nav_share"
+                android:icon="@drawable/ic_share"
+                android:title="Chia sẻ kỷ niệm" />
+        </menu>
+    </item>
+
+</menu>
