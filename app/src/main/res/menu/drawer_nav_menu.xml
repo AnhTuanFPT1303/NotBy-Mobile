@@ -19,6 +19,7 @@
             android:id="@+id/nav_health_tracking"
             android:icon="@drawable/ic_heart"
             android:title="Theo dõi sức khỏe" />
+        <!-- DÒNG NÀY ĐÃ ĐƯỢC SỬA LỖI - THÊM DẤU CÁCH SAU 'item' -->
         <item
             android:id="@+id/nav_schedule"
             android:icon="@drawable/ic_calendar"

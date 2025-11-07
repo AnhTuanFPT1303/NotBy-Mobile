@@ -4,10 +4,15 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+// Import cần thiết cho Menu
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -20,6 +25,8 @@ import com.example.notby.data.model.ApiResponse;
 import com.example.notby.data.model.ForumPost;
 import com.example.notby.data.model.MediaFile;
 import com.example.notby.data.remote.ApiClient;
+import com.example.notby.ui.dashboard.DashboardActivity;
+
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -65,6 +72,12 @@ public class ForumPostActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        // Thêm nút quay lại (Back) trên Toolbar
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setDisplayShowHomeEnabled(true);
+        }
+
         recyclerView = findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
@@ -82,6 +95,72 @@ public class ForumPostActivity extends AppCompatActivity {
 
         loadForumPosts();
     }
+
+    // ===================================================================
+    // BƯỚC 1: NẠP FILE MENU VÀO TOOLBAR (PHẦN BẠN BỊ THIẾU)
+    // ===================================================================
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.drawer_nav_menu, menu); // Dùng file menu của bạn
+        return true; // Trả về true để menu được hiển thị
+    }
+
+    // ===================================================================
+    // BƯỚC 2: XỬ LÝ KHI CLICK VÀO TỪNG MỤC MENU (PHẦN BẠN ĐÃ CÓ)
+    // ===================================================================
+    // Trong file ForumPostActivity.java
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        int itemId = item.getItemId();
+
+        // Xử lý nút quay lại (nút home/up)
+        if (itemId == android.R.id.home) {
+            finish(); // Đóng activity hiện tại và quay về màn hình trước
+            return true;
+        }
+
+        // ======================================================
+        // === PHẦN SỬA LỖI - THAY TOAST BẰNG INTENT ===
+        // ======================================================
+
+        if (itemId == R.id.nav_overview) {
+            // TẠO Ý ĐỊNH (INTENT) ĐỂ MỞ DASHBOARD ACTIVITY
+            Intent intent = new Intent(ForumPostActivity.this, DashboardActivity.class);
+            startActivity(intent); // BẮT ĐẦU ACTIVITY MỚI
+            return true; // Trả về true để báo rằng sự kiện đã được xử lý
+
+        } else if (itemId == R.id.nav_stats) {
+            // Tương tự, nếu bạn có StatsActivity
+            // Intent intent = new Intent(ForumPostActivity.this, StatsActivity.class);
+            // startActivity(intent);
+            Toast.makeText(this, "Chức năng Thống kê sẽ được phát triển sau!", Toast.LENGTH_SHORT).show();
+            return true;
+
+
+        } else if (itemId == R.id.nav_development_diary) {
+            // Nếu bạn có DevelopmentDiaryActivity
+            // Intent intent = new Intent(ForumPostActivity.this, DevelopmentDiaryActivity.class);
+            // startActivity(intent);
+            Toast.makeText(this, "Chức năng Nhật ký sẽ được phát triển sau!", Toast.LENGTH_SHORT).show();
+            return true;
+
+        } else if (itemId == R.id.nav_health_tracking) {
+            // Nếu bạn có HealthTrackingActivity
+            // Intent intent = new Intent(ForumPostActivity.this, HealthTrackingActivity.class);
+            // startActivity(intent);
+            Toast.makeText(this, "Chức năng Theo dõi sức khỏe sẽ được phát triển sau!", Toast.LENGTH_SHORT).show();
+            return true;
+        }
+        // ... các mục menu khác
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    // ===================================================================
+    // CÁC HÀM CÒN LẠI CỦA BẠN (GIỮ NGUYÊN)
+    // ===================================================================
 
     private void pickFile() {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
@@ -114,7 +193,6 @@ public class ForumPostActivity extends AppCompatActivity {
         postButton.setEnabled(false);
         postButton.setText("Đang đăng...");
 
-        // If a file is selected -> upload to Cloudinary, then create MediaFile, then create ForumPost
         if (selectedFileUri != null) {
             try {
                 final File uploadFile = createFileFromUri(selectedFileUri);
@@ -131,13 +209,11 @@ public class ForumPostActivity extends AppCompatActivity {
                             Object data = response.body().getData();
                             String fileUrl = extractFileUrlFromData(data);
                             if (fileUrl == null) {
-                                // cleanup
                                 deleteTempFile(uploadFile);
                                 onFailure(call, new Throwable("Unable to extract file URL from cloudinary response"));
                                 return;
                             }
 
-                            // Create MediaFile record
                             MediaFile mf = new MediaFile();
                             mf.setFileUrl(fileUrl);
                             mf.setFileName(uploadFile.getName());
@@ -147,9 +223,7 @@ public class ForumPostActivity extends AppCompatActivity {
                             ApiClient.getMediafileApi().create(mf).enqueue(new Callback<ApiResponse<MediaFile>>() {
                                 @Override
                                 public void onResponse(Call<ApiResponse<MediaFile>> call2, Response<ApiResponse<MediaFile>> resp2) {
-                                    // cleanup temp file once we've started the media record creation
                                     deleteTempFile(uploadFile);
-
                                     if (resp2.isSuccessful() && resp2.body() != null && resp2.body().isStatus()) {
                                         MediaFile created = resp2.body().getData();
                                         String fileId = created != null ? created.getId() : null;
@@ -162,7 +236,6 @@ public class ForumPostActivity extends AppCompatActivity {
 
                                 @Override
                                 public void onFailure(Call<ApiResponse<MediaFile>> call2, Throwable t2) {
-                                    // cleanup
                                     deleteTempFile(uploadFile);
                                     Toast.makeText(ForumPostActivity.this, "Media file creation failed: " + t2.getMessage(), Toast.LENGTH_SHORT).show();
                                     resetPostButton();
@@ -170,7 +243,6 @@ public class ForumPostActivity extends AppCompatActivity {
                             });
 
                         } else {
-                            // cleanup
                             deleteTempFile(uploadFile);
                             Toast.makeText(ForumPostActivity.this, "Cloud upload failed: " + response.message(), Toast.LENGTH_SHORT).show();
                             resetPostButton();
@@ -179,7 +251,6 @@ public class ForumPostActivity extends AppCompatActivity {
 
                     @Override
                     public void onFailure(Call<ApiResponse<Object>> call, Throwable t) {
-                        // cleanup
                         deleteTempFile(uploadFile);
                         Toast.makeText(ForumPostActivity.this, "Upload failed: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                         resetPostButton();
@@ -191,23 +262,19 @@ public class ForumPostActivity extends AppCompatActivity {
                 resetPostButton();
             }
         } else {
-            // No file -> create post directly
             createForumPostAfterFile(title, content, null);
         }
     }
 
-    // Helper to delete temporary files created from URIs
     private void deleteTempFile(File file) {
         if (file == null) return;
         try {
             if (file.exists()) {
-                boolean deleted = file.delete();
-                if (!deleted) {
+                if (!file.delete()) {
                     file.deleteOnExit();
                 }
             }
         } catch (Exception e) {
-            // ignore deletion errors but log if needed
             e.printStackTrace();
         }
     }
@@ -227,15 +294,11 @@ public class ForumPostActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<ApiResponse<ForumPost>> call, Response<ApiResponse<ForumPost>> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().isStatus()) {
-                    // clear inputs
                     newPostTitle.setText("");
                     newPostContent.setText("");
                     selectedFileUri = null;
                     attachImageButton.setText("Ảnh");
-
-                    // refresh list
                     loadForumPosts();
-
                     Toast.makeText(ForumPostActivity.this, "Đăng bài thành công", Toast.LENGTH_SHORT).show();
                 } else {
                     Toast.makeText(ForumPostActivity.this, "Post creation failed: " + response.message(), Toast.LENGTH_SHORT).show();
@@ -260,14 +323,14 @@ public class ForumPostActivity extends AppCompatActivity {
         if (data == null) return null;
         if (data instanceof String) return (String) data;
         if (data instanceof Map) {
-            Map map = (Map) data;
+            Map<?, ?> map = (Map<?, ?>) data;
             if (map.containsKey("url")) return String.valueOf(map.get("url"));
             if (map.containsKey("secure_url")) return String.valueOf(map.get("secure_url"));
             if (map.containsKey("data")) {
                 Object inner = map.get("data");
                 if (inner instanceof String) return (String) inner;
                 if (inner instanceof Map) {
-                    Map innerMap = (Map) inner;
+                    Map<?, ?> innerMap = (Map<?, ?>) inner;
                     if (innerMap.containsKey("url")) return String.valueOf(innerMap.get("url"));
                 }
             }
@@ -283,16 +346,12 @@ public class ForumPostActivity extends AppCompatActivity {
     }
 
     private String getAuthorId() {
-        // Get the current logged-in user id from TokenManager
         String userId = tokenManager.getUserId();
         Log.d(TAG, "getAuthorId() - Retrieved userId: " + userId);
-
         if (userId == null || userId.isEmpty()) {
             Log.e(TAG, "getAuthorId() - User ID is null or empty!");
-            // return null to indicate no logged-in user; UI logic should handle this
             return null;
         }
-
         Log.d(TAG, "getAuthorId() - Returning userId: " + userId);
         return userId;
     }

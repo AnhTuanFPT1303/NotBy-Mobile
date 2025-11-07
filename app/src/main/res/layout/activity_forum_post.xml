@@ -22,7 +22,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
                 app:title="Cộng đồng NoteBaby"
-                app:titleTextColor="@android:color/black" />
+                app:titleTextColor="@android:color/black"
+                app:menu="@menu/drawer_nav_menu"/>
+
         </com.google.android.material.appbar.AppBarLayout>
 
         <TextView
