@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CopilotDiffPersistence">
+    <option name="pendingDiffs">
+      <map>
+        <entry key="$PROJECT_DIR$/app/src/main/res/values/post_strings.xml">
+          <value>
+            <PendingDiffInfo>
+              <option name="filePath" value="$PROJECT_DIR$/app/src/main/res/values/post_strings.xml" />
+              <option name="originalContent" value="&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;&#10;&lt;resources&gt;&#10;    &lt;!-- Post Detail --&gt;&#10;    &lt;string name=&quot;post_author_format&quot;&gt;By %s&lt;/string&gt;&#10;    &lt;string name=&quot;post_author_anonymous&quot;&gt;By Anonymous&lt;/string&gt;&#10;    &lt;string name=&quot;comment_empty_message&quot;&gt;Please enter a comment&lt;/string&gt;&#10;    &lt;string name=&quot;login_required_message&quot;&gt;Please login to comment&lt;/string&gt;&#10;    &lt;string name=&quot;comment_posted_message&quot;&gt;Comment posted!&lt;/string&gt;&#10;    &lt;string name=&quot;comment_post_failed_message&quot;&gt;Failed to post comment: %s&lt;/string&gt;&#10;    &lt;string name=&quot;comment_post_failed&quot;&gt;Failed to post comment&lt;/string&gt;&#10;    &lt;string name=&quot;comment_liked_message&quot;&gt;Comment liked!&lt;/string&gt;&#10;    &lt;string name=&quot;error_message&quot;&gt;Error: %s&lt;/string&gt;&#10;&lt;/resources&gt;" />
+              <option name="updatedContent" value="&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;&#10;&lt;resources&gt;&#10;    &lt;!-- Post Detail --&gt;&#10;    &lt;string name=&quot;post_author_format&quot;&gt;By %s&lt;/string&gt;&#10;    &lt;string name=&quot;post_author_anonymous&quot;&gt;By Anonymous&lt;/string&gt;&#10;    &lt;string name=&quot;comment_empty_message&quot;&gt;Please enter a comment&lt;/string&gt;&#10;    &lt;string name=&quot;login_required_message&quot;&gt;Please login to comment&lt;/string&gt;&#10;    &lt;string name=&quot;comment_posted_message&quot;&gt;Comment posted!&lt;/string&gt;&#10;    &lt;string name=&quot;comment_post_failed_message&quot;&gt;Failed to post comment: %s&lt;/string&gt;&#10;    &lt;string name=&quot;comment_post_failed&quot;&gt;Failed to post comment&lt;/string&gt;&#10;    &lt;string name=&quot;comment_liked_message&quot;&gt;Comment liked!&lt;/string&gt;&#10;    &lt;string name=&quot;error_message&quot;&gt;Error: %s&lt;/string&gt;&#10;&lt;/resources&gt;" />
+            </PendingDiffInfo>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>

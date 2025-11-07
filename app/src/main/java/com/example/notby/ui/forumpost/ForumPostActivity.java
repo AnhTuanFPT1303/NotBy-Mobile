@@ -288,7 +288,7 @@ public class ForumPostActivity extends AppCompatActivity {
         }
 
         ForumPost post = new ForumPost(title, content, authorId);
-        if (fileId != null) post.setFileId(fileId);
+        if (fileId != null) post.setFileElement(new com.google.gson.JsonPrimitive(fileId));
 
         ApiClient.getForumPostApi().create(post).enqueue(new Callback<ApiResponse<ForumPost>>() {
             @Override

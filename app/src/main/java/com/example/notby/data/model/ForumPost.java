@@ -25,8 +25,8 @@ public class ForumPost {
     @SerializedName("Author")
     private JsonElement author; // can be a String id or an object
 
-    @SerializedName("FileId")
-    private String fileId;
+    @SerializedName("File")
+    private JsonElement file; // can be a String id or a MediaFile object
 
     @SerializedName("created_at")
     private String createdAt;
@@ -62,7 +62,26 @@ public class ForumPost {
         return getAuthorId();
     }
 
-    public String getFileId() { return fileId; }
+    // Helper to get fileId
+    public String getFileId() {
+        if (file == null || file.isJsonNull()) return null;
+        if (file.isJsonPrimitive()) {
+            try { return file.getAsString(); } catch (Exception e) { return null; }
+        }
+        if (file.isJsonObject()) {
+            JsonObject obj = file.getAsJsonObject();
+            if (obj.has("_id") && !obj.get("_id").isJsonNull()) return obj.get("_id").getAsString();
+            if (obj.has("id") && !obj.get("id").isJsonNull()) return obj.get("id").getAsString();
+        }
+        return null;
+    }
+
+    // Helper to get MediaFile object
+    public MediaFile getFileObject() {
+        if (file == null || file.isJsonNull() || !file.isJsonObject()) return null;
+        try { return new Gson().fromJson(file, MediaFile.class); } catch (Exception e) { return null; }
+    }
+
     public String getCreatedAt() { return createdAt; }
     public String getUpdatedAt() { return updatedAt; }
 
@@ -110,7 +129,9 @@ public class ForumPost {
     // Accept a JsonElement (used by Gson during deserialization)
     public void setAuthorElement(JsonElement authorElement) { this.author = authorElement; }
 
-    public void setFileId(String fileId) { this.fileId = fileId; }
+    // Setter for file
+    public void setFileElement(JsonElement fileElement) { this.file = fileElement; }
+
     public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
     public void setUpdatedAt(String updatedAt) { this.updatedAt = updatedAt; }
 }

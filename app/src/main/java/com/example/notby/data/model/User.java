@@ -63,6 +63,18 @@ public class User {
     public String getCreatedAt() { return createdAt; }
     public String getUpdatedAt() { return updatedAt; }
 
+    // Helper methods
+    public String getUsername() {
+        if (firstName != null && lastName != null) {
+            return firstName + " " + lastName;
+        } else if (firstName != null) {
+            return firstName;
+        } else if (email != null) {
+            return email.split("@")[0];
+        }
+        return "Anonymous";
+    }
+
     // Setters
     public void setId(String id) { this.id = id; }
     public void setEmail(String email) { this.email = email; }

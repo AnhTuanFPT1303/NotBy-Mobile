@@ -1,0 +1,303 @@
+package com.example.notby.ui.postdetail;
+
+import android.os.Bundle;
+import android.text.TextUtils;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.TextView;
+import android.widget.Toast;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
+import com.example.notby.R;
+import com.example.notby.data.TokenManager;
+import com.example.notby.data.model.ApiResponse;
+import com.example.notby.data.model.Comment;
+import com.example.notby.data.model.ForumPost;
+import com.example.notby.data.model.MediaFile;
+import com.example.notby.data.model.User;
+import com.example.notby.data.remote.ApiClient;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import java.util.List;
+
+public class PostDetailActivity extends AppCompatActivity {
+    public static final String EXTRA_POST_ID = "post_id";
+
+    private TextView postTitle;
+    private TextView postAuthor;
+    private TextView postContent;
+    private ImageView postImage;
+    private TextView likeCount;
+    private TextView viewCount;
+    private TextView commentCount;
+    private View likeButton;
+    private ImageView likeIcon;
+    private EditText commentInput;
+    private ImageView sendCommentButton;
+    private RecyclerView commentsRecyclerView;
+    private TextView emptyCommentsText;
+    private ProgressBar progressBar;
+    private CommentAdapter commentAdapter;
+    private ForumPost currentPost;
+    private String postId;
+    private String currentUserId;
+    private boolean isLiked = false;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_post_detail);
+
+        // Get post ID from intent
+        postId = getIntent().getStringExtra(EXTRA_POST_ID);
+        if (postId == null || postId.isEmpty()) {
+            Toast.makeText(this, "Invalid post ID", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
+        // Get current user ID from TokenManager
+        TokenManager tokenManager = new TokenManager(this);
+        currentUserId = tokenManager.getUserId();
+
+        initViews();
+        setupRecyclerView();
+        setupListeners();
+        loadPostDetail();
+        loadComments();
+    }
+
+    private void initViews() {
+        postTitle = findViewById(R.id.postTitle);
+        postAuthor = findViewById(R.id.postAuthor);
+        postContent = findViewById(R.id.postContent);
+        postImage = findViewById(R.id.postImage);
+        likeCount = findViewById(R.id.likeCount);
+        viewCount = findViewById(R.id.viewCount);
+        commentCount = findViewById(R.id.commentCount);
+        likeButton = findViewById(R.id.likeButton);
+        likeIcon = findViewById(R.id.likeIcon);
+        commentInput = findViewById(R.id.commentInput);
+        sendCommentButton = findViewById(R.id.sendCommentButton);
+        commentsRecyclerView = findViewById(R.id.commentsRecyclerView);
+        emptyCommentsText = findViewById(R.id.emptyCommentsText);
+        progressBar = findViewById(R.id.progressBar);
+    }
+
+    private void setupRecyclerView() {
+        commentAdapter = new CommentAdapter(this::likeComment);
+        commentsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        commentsRecyclerView.setAdapter(commentAdapter);
+    }
+
+    private void setupListeners() {
+        likeButton.setOnClickListener(v -> toggleLike());
+        sendCommentButton.setOnClickListener(v -> postComment());
+    }
+
+    private void loadPostDetail() {
+        progressBar.setVisibility(View.VISIBLE);
+        ApiClient.getForumPostApi().getById(postId).enqueue(new Callback<ApiResponse<ForumPost>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<ForumPost>> call, Response<ApiResponse<ForumPost>> response) {
+                progressBar.setVisibility(View.GONE);
+                if (response.isSuccessful() && response.body() != null) {
+                    ApiResponse<ForumPost> apiResponse = response.body();
+                    if (apiResponse.isStatus() && apiResponse.getData() != null) {
+                        currentPost = apiResponse.getData();
+                        displayPostDetail();
+                    } else {
+                        Toast.makeText(PostDetailActivity.this,
+                            "Failed to load post: " + apiResponse.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(PostDetailActivity.this,
+                        "Failed to load post", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<ForumPost>> call, Throwable t) {
+                progressBar.setVisibility(View.GONE);
+                Toast.makeText(PostDetailActivity.this,
+                    "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void displayPostDetail() {
+        if (currentPost == null) return;
+
+        postTitle.setText(currentPost.getTitle() != null ? currentPost.getTitle() : "");
+        postContent.setText(currentPost.getContent() != null ? currentPost.getContent() : "");
+
+        // Display author
+        User author = currentPost.getAuthorUser();
+        if (author != null && author.getUsername() != null) {
+            postAuthor.setText(getString(R.string.post_author_format, author.getUsername()));
+        } else {
+            postAuthor.setText(R.string.post_author_anonymous);
+        }
+
+        // Display stats
+        likeCount.setText(String.valueOf(currentPost.getLikes()));
+        viewCount.setText(String.valueOf(currentPost.getViews()));
+
+        // Load and display media file if available
+        if (currentPost.getFileId() != null && !currentPost.getFileId().isEmpty()) {
+            loadMediaFile(currentPost.getFileId());
+        } else {
+            postImage.setVisibility(View.GONE);
+        }
+
+        // Update like button state
+        updateLikeButton();
+    }
+
+    private void loadMediaFile(String fileId) {
+        ApiClient.getMediafileApi().getById(fileId).enqueue(new Callback<ApiResponse<MediaFile>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<MediaFile>> call, Response<ApiResponse<MediaFile>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    ApiResponse<MediaFile> apiResponse = response.body();
+                    if (apiResponse.isStatus() && apiResponse.getData() != null) {
+                        MediaFile mediaFile = apiResponse.getData();
+                        String fileUrl = mediaFile.getFileUrl();
+                        if (!TextUtils.isEmpty(fileUrl)) {
+                            postImage.setVisibility(View.VISIBLE);
+                            Glide.with(PostDetailActivity.this)
+                                .load(fileUrl)
+                                .transition(DrawableTransitionOptions.withCrossFade())
+                                .into(postImage);
+                            return;
+                        }
+                    }
+                }
+                postImage.setVisibility(View.GONE);
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse<MediaFile>> call, Throwable t) {
+                postImage.setVisibility(View.GONE);
+            }
+        });
+    }
+
+    private void loadComments() {
+        ApiClient.getForumCommentApi().findByPost(postId).enqueue(new Callback<ApiResponse<List<Comment>>>() {
+            @Override
+            public void onResponse(Call<ApiResponse<List<Comment>>> call, Response<ApiResponse<List<Comment>>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    ApiResponse<List<Comment>> apiResponse = response.body();
+                    android.util.Log.d("ForumCommentApi", "Raw response: " + new com.google.gson.Gson().toJson(apiResponse));
+                    if (apiResponse.isStatus() && apiResponse.getData() != null) {
+                        List<Comment> comments = apiResponse.getData();
+                        android.util.Log.d("ForumCommentApi", "Parsed comments: " + comments);
+                        commentAdapter.setComments(comments);
+                        commentCount.setText(String.valueOf(comments.size()));
+                        if (comments.isEmpty()) {
+                            emptyCommentsText.setVisibility(View.VISIBLE);
+                            commentsRecyclerView.setVisibility(View.GONE);
+                        } else {
+                            emptyCommentsText.setVisibility(View.GONE);
+                            commentsRecyclerView.setVisibility(View.VISIBLE);
+                        }
+                    } else {
+                        android.util.Log.e("ForumCommentApi", "API status false or data null: " + apiResponse.getMessage());
+                        commentCount.setText("0");
+                        emptyCommentsText.setVisibility(View.VISIBLE);
+                        commentsRecyclerView.setVisibility(View.GONE);
+                    }
+                } else {
+                    android.util.Log.e("ForumCommentApi", "Response not successful or body null");
+                }
+            }
+            @Override
+            public void onFailure(Call<ApiResponse<List<Comment>>> call, Throwable t) {
+                android.util.Log.e("ForumCommentApi", "Network/API error: " + t.getMessage(), t);
+                Toast.makeText(PostDetailActivity.this,
+                    "Failed to load comments", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void toggleLike() {
+        if (currentPost == null) return;
+
+        int newLikes = isLiked ? currentPost.getLikes() - 1 : currentPost.getLikes() + 1;
+        currentPost.setLikes(newLikes);
+        isLiked = !isLiked;
+        likeCount.setText(String.valueOf(newLikes));
+        updateLikeButton();
+
+        Toast.makeText(this, isLiked ? "Liked!" : "Unliked", Toast.LENGTH_SHORT).show();
+    }
+
+    private void updateLikeButton() {
+        likeIcon.setColorFilter(
+            ContextCompat.getColor(this,
+                isLiked ? android.R.color.holo_red_dark : android.R.color.darker_gray)
+        );
+    }
+
+    private void postComment() {
+        String content = commentInput.getText().toString().trim();
+        if (content.isEmpty()) {
+            Toast.makeText(this, "Please enter a comment", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (currentUserId == null || currentUserId.isEmpty()) {
+            Toast.makeText(this, "Please login to comment", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        // If you want to attach a file, set fileId here. Otherwise, use empty string.
+        String fileId = "";
+        Comment comment = new Comment(content, postId, fileId, currentUserId, 0);
+        progressBar.setVisibility(View.VISIBLE);
+        sendCommentButton.setEnabled(false);
+        ApiClient.getForumCommentApi().create(comment).enqueue(new retrofit2.Callback<ApiResponse<Comment>>() {
+            @Override
+            public void onResponse(retrofit2.Call<ApiResponse<Comment>> call, retrofit2.Response<ApiResponse<Comment>> response) {
+                progressBar.setVisibility(View.GONE);
+                sendCommentButton.setEnabled(true);
+                if (response.isSuccessful() && response.body() != null) {
+                    ApiResponse<Comment> apiResponse = response.body();
+                    if (apiResponse.isStatus() && apiResponse.getData() != null) {
+                        Toast.makeText(PostDetailActivity.this, "Comment posted!", Toast.LENGTH_SHORT).show();
+                        commentInput.setText("");
+                        loadComments();
+                    } else {
+                        Toast.makeText(PostDetailActivity.this,
+                            "Failed to post comment: " + apiResponse.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(PostDetailActivity.this,
+                        "Failed to post comment", Toast.LENGTH_SHORT).show();
+                }
+            }
+            @Override
+            public void onFailure(retrofit2.Call<ApiResponse<Comment>> call, Throwable t) {
+                progressBar.setVisibility(View.GONE);
+                sendCommentButton.setEnabled(true);
+                Toast.makeText(PostDetailActivity.this,
+                    "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void likeComment(Comment comment, int position) {
+        int newLikes = comment.getLikes() + 1;
+        comment.setLikes(newLikes);
+        commentAdapter.updateComment(position, comment);
+        Toast.makeText(this, getString(R.string.comment_liked_message), Toast.LENGTH_SHORT).show();
+    }
+}
