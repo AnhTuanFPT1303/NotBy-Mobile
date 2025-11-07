@@ -13,6 +13,7 @@ import com.bumptech.glide.Glide;
 import com.example.notby.R;
 import com.example.notby.data.model.Article;
 import com.example.notby.data.model.MediaFile;
+import com.example.notby.data.model.User;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,10 +21,16 @@ import java.util.List;
 public class LibraryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private static final int TYPE_ARTICLE = 0;
     private static final int TYPE_VIDEO = 1;
+    private static final int TYPE_DOCUMENT = 2;
+    private static final int TYPE_EXPERT = 3;
     private List<Article> articles = new ArrayList<>();
     private List<MediaFile> videos = new ArrayList<>();
+    private List<MediaFile> documents = new ArrayList<>();
+    private List<User> experts = new ArrayList<>();
     private OnArticleClickListener articleListener;
     private OnVideoClickListener videoListener;
+    private OnDocumentClickListener documentListener;
+    private OnExpertClickListener expertListener;
 
     public interface OnArticleClickListener {
         void onArticleClick(Article article);
@@ -31,25 +38,73 @@ public class LibraryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     public interface OnVideoClickListener {
         void onVideoClick(MediaFile video);
     }
+    public interface OnDocumentClickListener {
+        void onDocumentClick(MediaFile document);
+    }
+    public interface OnExpertClickListener {
+        void onExpertClick(User expert);
+    }
     public void setOnArticleClickListener(OnArticleClickListener listener) {
         this.articleListener = listener;
     }
     public void setOnVideoClickListener(OnVideoClickListener listener) {
         this.videoListener = listener;
     }
+    public void setOnDocumentClickListener(OnDocumentClickListener listener) {
+        this.documentListener = listener;
+    }
+    public void setOnExpertClickListener(OnExpertClickListener listener) {
+        this.expertListener = listener;
+    }
     public void setArticles(List<Article> articles) {
         this.articles = articles;
         this.videos.clear();
+        this.documents.clear();
+        this.experts.clear();
+        notifyDataSetChanged();
+    }
+
+    // Insert a newly created article at the front of the list and notify adapter.
+    public void addArticleAtFront(Article article) {
+        if (article == null) return;
+        if (articles == null) articles = new ArrayList<>();
+        articles.add(0, article);
+        // ensure other lists are cleared because this adapter shows one type at a time
+        this.videos.clear();
+        this.documents.clear();
+        this.experts.clear();
+        // Dataset type changed (was maybe video/document), safer to refresh whole adapter
         notifyDataSetChanged();
     }
     public void setVideos(List<MediaFile> videos) {
         this.videos = videos;
         this.articles.clear();
+        this.documents.clear();
+        this.experts.clear();
+        notifyDataSetChanged();
+    }
+    public void setDocuments(List<MediaFile> documents) {
+        this.documents = documents;
+        this.articles.clear();
+        this.videos.clear();
+        this.experts.clear();
+        notifyDataSetChanged();
+    }
+
+    public void setExperts(List<User> experts) {
+        this.experts = experts;
+        this.articles.clear();
+        this.videos.clear();
+        this.documents.clear();
         notifyDataSetChanged();
     }
     @Override
     public int getItemViewType(int position) {
-        return articles.isEmpty() ? TYPE_VIDEO : TYPE_ARTICLE;
+        // Priority: articles, videos, documents, experts
+        if (!articles.isEmpty()) return TYPE_ARTICLE;
+        if (!videos.isEmpty()) return TYPE_VIDEO;
+        if (!documents.isEmpty()) return TYPE_DOCUMENT;
+        return TYPE_EXPERT;
     }
     @NonNull
     @Override
@@ -58,23 +113,39 @@ public class LibraryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             View view = LayoutInflater.from(parent.getContext())
                     .inflate(R.layout.item_library_article, parent, false);
             return new ArticleViewHolder(view);
-        } else {
+        } else if (viewType == TYPE_VIDEO) {
             View view = LayoutInflater.from(parent.getContext())
                     .inflate(R.layout.item_library_video, parent, false);
             return new VideoViewHolder(view);
+        } else if (viewType == TYPE_EXPERT) {
+            View view = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_library_expert, parent, false);
+            return new ExpertViewHolder(view);
+        } else {
+            // use same layout as video for documents (thumbnail + title)
+            View view = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_library_video, parent, false);
+            return new DocumentViewHolder(view);
         }
     }
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (getItemViewType(position) == TYPE_ARTICLE) {
             ((ArticleViewHolder) holder).bind(articles.get(position));
-        } else {
+        } else if (getItemViewType(position) == TYPE_VIDEO) {
             ((VideoViewHolder) holder).bind(videos.get(position));
+        } else if (getItemViewType(position) == TYPE_EXPERT) {
+            ((ExpertViewHolder) holder).bind(experts.get(position));
+        } else {
+            ((DocumentViewHolder) holder).bind(documents.get(position));
         }
     }
     @Override
     public int getItemCount() {
-        return articles.isEmpty() ? videos.size() : articles.size();
+        if (!articles.isEmpty()) return articles.size();
+        if (!videos.isEmpty()) return videos.size();
+        if (!documents.isEmpty()) return documents.size();
+        return experts.size();
     }
     class ArticleViewHolder extends RecyclerView.ViewHolder {
         private final ImageView imageArticle;
@@ -148,5 +219,88 @@ public class LibraryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     .centerCrop()
                     .into(imageVideoThumb);
         }
+    }
+    class DocumentViewHolder extends RecyclerView.ViewHolder {
+        private final ImageView imageDocThumb;
+        private final TextView textDocTitle;
+
+        public DocumentViewHolder(@NonNull View itemView) {
+            super(itemView);
+            imageDocThumb = itemView.findViewById(R.id.imageVideoThumb);
+            textDocTitle = itemView.findViewById(R.id.textVideoTitle);
+            itemView.setOnClickListener(v -> {
+                int position = getAdapterPosition();
+                if (position != RecyclerView.NO_POSITION && documentListener != null) {
+                    documentListener.onDocumentClick(documents.get(position));
+                }
+            });
+        }
+
+        public void bind(MediaFile document) {
+            textDocTitle.setText(document.getFileName());
+            // Try to load fileUrl as thumbnail if available, otherwise show a generic icon
+            if (document.getFileUrl() != null && !document.getFileUrl().isEmpty()) {
+                Glide.with(itemView.getContext())
+                        .load(document.getFileUrl())
+                        .centerCrop()
+                        .into(imageDocThumb);
+            } else {
+                imageDocThumb.setImageResource(R.drawable.ic_file); // fallback icon
+            }
+        }
+    }
+
+    class ExpertViewHolder extends RecyclerView.ViewHolder {
+        private final ImageView imageExpert;
+        private final TextView textExpertName;
+        private final TextView textExpertRole;
+        private final TextView textExpertEmail;
+
+        public ExpertViewHolder(@NonNull View itemView) {
+            super(itemView);
+            imageExpert = itemView.findViewById(R.id.imageExpert);
+            textExpertName = itemView.findViewById(R.id.textExpertName);
+            textExpertRole = itemView.findViewById(R.id.textExpertRole);
+            textExpertEmail = itemView.findViewById(R.id.textExpertEmail);
+
+            itemView.setOnClickListener(v -> {
+                int position = getAdapterPosition();
+                if (position != RecyclerView.NO_POSITION && expertListener != null) {
+                    expertListener.onExpertClick(experts.get(position));
+                }
+            });
+        }
+
+        public void bind(User expert) {
+            textExpertName.setText(expert.getUsername());
+            textExpertRole.setText(expert.getRole());
+            textExpertEmail.setText(expert.getEmail());
+
+            // Load expert photo if available
+            if (expert.getPhoto() != null && !expert.getPhoto().isEmpty()) {
+                Glide.with(itemView.getContext())
+                        .load(expert.getPhoto())
+                        .centerCrop()
+                        .placeholder(R.drawable.ic_person)
+                        .into(imageExpert);
+            } else {
+                imageExpert.setImageResource(R.drawable.ic_person);
+            }
+        }
+    }
+
+    /**
+     * Check if an article already exists in the adapter.
+     * @param article The article to check.
+     * @return True if the article exists, false otherwise.
+     */
+    public boolean containsArticle(Article article) {
+        if (article == null || article.getId() == null) return false;
+        for (Article a : articles) {
+            if (article.getId().equals(a.getId())) {
+                return true;
+            }
+        }
+        return false;
     }
 }

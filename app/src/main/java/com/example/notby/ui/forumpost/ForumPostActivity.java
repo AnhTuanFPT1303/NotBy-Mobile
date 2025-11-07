@@ -332,12 +332,9 @@ public class ForumPostActivity extends AppCompatActivity {
 
     private String getAuthorId() {
         String userId = tokenManager.getUserId();
-        Log.d(TAG, "getAuthorId() - Retrieved userId: " + userId);
         if (userId == null || userId.isEmpty()) {
-            Log.e(TAG, "getAuthorId() - User ID is null or empty!");
             return null;
         }
-        Log.d(TAG, "getAuthorId() - Returning userId: " + userId);
         return userId;
     }
 

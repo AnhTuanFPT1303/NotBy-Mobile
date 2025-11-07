@@ -56,25 +56,4 @@ public class TokenManager {
         editor.clear();
         editor.apply();
     }
-
-    /**
-     * Extracts the user ID from the JWT token payload.
-     * @return user ID if present, null otherwise
-     */
-    public String getUserIdFromToken() {
-        String token = getToken();
-        if (token == null) return null;
-        try {
-            String[] parts = token.split("\\.");
-            if (parts.length < 2) return null;
-            String payload = parts[1];
-            byte[] decodedBytes = Base64.decode(payload, Base64.URL_SAFE | Base64.NO_PADDING | Base64.NO_WRAP);
-            String payloadJson = new String(decodedBytes);
-            JSONObject jsonObject = new JSONObject(payloadJson);
-            return jsonObject.optString("id", null);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
 }
