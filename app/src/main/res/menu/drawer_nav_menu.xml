@@ -16,14 +16,14 @@
             android:icon="@drawable/ic_book"
             android:title="Nhật ký phát triển" />
         <item
-            android:id="@+id/nav_health_tracking"
+            android:id="@+id/nav_forum"
             android:icon="@drawable/ic_heart"
-            android:title="Theo dõi sức khỏe" />
+            android:title="Diễn đàn" />
         <!-- DÒNG NÀY ĐÃ ĐƯỢC SỬA LỖI - THÊM DẤU CÁCH SAU 'item' -->
         <item
-            android:id="@+id/nav_schedule"
+            android:id="@+id/nav_library"
             android:icon="@drawable/ic_calendar"
-            android:title="Lịch học / Thời khóa biểu" />
+            android:title="Thư viện cho mẹ" />
     </group>
 
     <item android:title="Thao tác nhanh">

@@ -1,5 +1,6 @@
 package com.example.notby.ui.dashboard;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
@@ -16,6 +17,8 @@ import androidx.fragment.app.Fragment;
 
 import com.example.notby.R;
 import com.example.notby.ui.diary.DiaryFragment; // Import DiaryFragment
+import com.example.notby.ui.library.LibraryActivity;
+import com.example.notby.ui.forumpost.ForumPostActivity; // Import ForumPostActivity
 import com.google.android.material.navigation.NavigationView;
 
 public class DashboardActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
@@ -39,13 +42,22 @@ public class DashboardActivity extends AppCompatActivity implements NavigationVi
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
 
-        // Set OverviewFragment as the default screen
-        if (savedInstanceState == null) {
-            getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, new OverviewFragment()).commit();
+        // Handle incoming intent
+        if (getIntent() != null && getIntent().getBooleanExtra("open_diary", false)) {
+            // Open diary fragment
+            getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container, new DiaryFragment())
+                .commit();
+            navigationView.setCheckedItem(R.id.nav_development_diary);
+        } else if (savedInstanceState == null) {
+            // Set default fragment
+            getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container, new OverviewFragment())
+                .commit();
             navigationView.setCheckedItem(R.id.nav_overview);
         }
 
-        // --- Handle Footer Click --- 
+        // --- Handle Footer Click ---
         View navFooter = navigationView.findViewById(R.id.nav_footer_root);
         navFooter.setOnClickListener(this::showFooterPopupMenu);
     }
@@ -74,7 +86,7 @@ public class DashboardActivity extends AppCompatActivity implements NavigationVi
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         Fragment selectedFragment = null;
         int itemId = item.getItemId();
-        
+
         if (itemId == R.id.nav_overview) {
             selectedFragment = new OverviewFragment();
         } else if (itemId == R.id.nav_stats) {
@@ -82,7 +94,13 @@ public class DashboardActivity extends AppCompatActivity implements NavigationVi
             Toast.makeText(this, "Thống kê", Toast.LENGTH_SHORT).show();
         } else if (itemId == R.id.nav_development_diary) {
             selectedFragment = new DiaryFragment(); // Load the DiaryFragment
-        } // Add other else-if blocks for other menu items
+        }  else if (itemId == R.id.nav_library) {
+            startActivity(new Intent(this, LibraryActivity.class));
+            return true;
+        } else if (itemId == R.id.nav_forum) {
+            startActivity(new Intent(this, ForumPostActivity.class));
+            return true;
+        }
 
         if (selectedFragment != null) {
             getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, selectedFragment).commit();

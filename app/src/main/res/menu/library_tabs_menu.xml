@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_articles"
+        android:title="Bài viết" />
+    <item
+        android:id="@+id/nav_videos"
+        android:title="Video" />
+    <item
+        android:id="@+id/nav_experts"
+        android:title="Chuyên gia" />
+    <item
+        android:id="@+id/nav_documents"
+        android:title="Tài liệu" />
+</menu>
+
