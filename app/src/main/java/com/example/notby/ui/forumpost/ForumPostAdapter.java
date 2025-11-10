@@ -64,8 +64,8 @@ public class ForumPostAdapter extends RecyclerView.Adapter<ForumPostAdapter.View
         // Display media file thumbnail if available
         if (holder.imageView != null) {
             String fileUrl = null;
-            if (post.getFileObject() != null) {
-                fileUrl = post.getFileObject().getFileUrl();
+            if (post.getFile() != null) {
+                fileUrl = post.getFile().getFileUrl();
             }
             if (fileUrl != null && !fileUrl.isEmpty()) {
                 holder.imageView.setVisibility(View.VISIBLE);

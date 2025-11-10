@@ -26,7 +26,10 @@ public class ForumPost {
     private JsonElement author; // can be a String id or an object
 
     @SerializedName("File")
-    private JsonElement file; // can be a String id or a MediaFile object
+    private MediaFile file; // can be a String id or a MediaFile object
+
+    @SerializedName("FileId")
+    private String fileId; // Used when creating posts - send only the ID
 
     @SerializedName("created_at")
     private String createdAt;
@@ -50,6 +53,10 @@ public class ForumPost {
         }
     }
 
+    public MediaFile getFile() {
+        return file;
+    }
+
     // Getters
     public String getId() { return id; }
     public String getTitle() { return title; }
@@ -64,22 +71,9 @@ public class ForumPost {
 
     // Helper to get fileId
     public String getFileId() {
-        if (file == null || file.isJsonNull()) return null;
-        if (file.isJsonPrimitive()) {
-            try { return file.getAsString(); } catch (Exception e) { return null; }
-        }
-        if (file.isJsonObject()) {
-            JsonObject obj = file.getAsJsonObject();
-            if (obj.has("_id") && !obj.get("_id").isJsonNull()) return obj.get("_id").getAsString();
-            if (obj.has("id") && !obj.get("id").isJsonNull()) return obj.get("id").getAsString();
-        }
-        return null;
-    }
-
-    // Helper to get MediaFile object
-    public MediaFile getFileObject() {
-        if (file == null || file.isJsonNull() || !file.isJsonObject()) return null;
-        try { return new Gson().fromJson(file, MediaFile.class); } catch (Exception e) { return null; }
+        if (fileId != null) return fileId; // Return explicit fileId if set
+        if (file == null) return null;
+        return file.getId(); // Fallback to file's ID
     }
 
     public String getCreatedAt() { return createdAt; }
@@ -130,7 +124,10 @@ public class ForumPost {
     public void setAuthorElement(JsonElement authorElement) { this.author = authorElement; }
 
     // Setter for file
-    public void setFileElement(JsonElement fileElement) { this.file = fileElement; }
+    public void setFile(MediaFile file) { this.file = file; }
+
+    // Setter for fileId (used when creating posts)
+    public void setFileId(String fileId) { this.fileId = fileId; }
 
     public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
     public void setUpdatedAt(String updatedAt) { this.updatedAt = updatedAt; }

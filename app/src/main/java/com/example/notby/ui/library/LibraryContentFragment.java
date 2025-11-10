@@ -52,6 +52,12 @@ public class LibraryContentFragment extends Fragment {
     private Uri selectedVideoUri;
     private String selectedVideoName;
 
+    // File upload functionality
+    private FileUploadManager fileUploadManager;
+    private ActivityResultLauncher<Intent> filePickerLauncher;
+    private Uri selectedFileUri;
+    private String selectedFileName;
+
     public static LibraryContentFragment newInstance(int position) {
         LibraryContentFragment fragment = new LibraryContentFragment();
         Bundle args = new Bundle();
@@ -86,6 +92,25 @@ public class LibraryContentFragment extends Fragment {
             }
         );
 
+        // Initialize file upload functionality
+        fileUploadManager = new FileUploadManager(requireContext());
+        filePickerLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                    Uri uri = result.getData().getData();
+                    if (uri != null) {
+                        selectedFileUri = uri;
+                        selectedFileName = getFileName(uri);
+                        // Notify that file was selected
+                        Bundle resultBundle = new Bundle();
+                        resultBundle.putBoolean("selected", true);
+                        getParentFragmentManager().setFragmentResult("file_selected", resultBundle);
+                    }
+                }
+            }
+        );
+
         // Ensure the listener is set only once
         getParentFragmentManager().setFragmentResultListener("article_created", this, (requestKey, bundle) -> {
             boolean refresh = bundle.getBoolean("refresh", false);
@@ -114,6 +139,7 @@ public class LibraryContentFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_library_content, container, false);
         recyclerView = view.findViewById(R.id.recyclerView);
         FloatingActionButton fabUploadVideo = view.findViewById(R.id.fabUploadVideo);
+        FloatingActionButton fabUploadFile = view.findViewById(R.id.fabUploadFile);
 
         setupRecyclerView();
         adapter.setOnVideoClickListener(video -> openVideo(video));
@@ -126,6 +152,14 @@ public class LibraryContentFragment extends Fragment {
             fabUploadVideo.setOnClickListener(v -> showVideoUploadDialog());
         } else {
             fabUploadVideo.setVisibility(View.GONE);
+        }
+
+        // Setup FAB for file upload (only show in documents tab)
+        if (position == 3) {
+            fabUploadFile.setVisibility(View.VISIBLE);
+            fabUploadFile.setOnClickListener(v -> showFileUploadDialog());
+        } else {
+            fabUploadFile.setVisibility(View.GONE);
         }
 
         return view;
@@ -449,6 +483,104 @@ public class LibraryContentFragment extends Fragment {
         // Trigger result listener when video is selected
         if (selectedVideoUri != null && selectedVideoName != null) {
             tvSelectedFile.setText("Đã chọn: " + selectedVideoName);
+            tvSelectedFile.setVisibility(View.VISIBLE);
+            btnUpload.setEnabled(true);
+        }
+    }
+
+    private void showFileUploadDialog() {
+        View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_upload_file, null);
+
+        AlertDialog dialog = new AlertDialog.Builder(requireContext())
+            .setView(dialogView)
+            .setCancelable(false)
+            .create();
+
+        // Get dialog controls
+        android.widget.Button btnSelectFile = dialogView.findViewById(R.id.btnSelectFile);
+        android.widget.TextView tvSelectedFile = dialogView.findViewById(R.id.tvSelectedFile);
+        android.widget.ProgressBar progressBar = dialogView.findViewById(R.id.progressBar);
+        android.widget.TextView tvProgress = dialogView.findViewById(R.id.tvProgress);
+        android.widget.Button btnCancel = dialogView.findViewById(R.id.btnCancel);
+        android.widget.Button btnUpload = dialogView.findViewById(R.id.btnUpload);
+
+        // Reset state
+        selectedFileUri = null;
+        selectedFileName = null;
+
+        btnSelectFile.setOnClickListener(v -> {
+            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+            intent.setType("*/*");
+            String[] mimeTypes = {"application/pdf", "application/msword",
+                                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                "text/plain"};
+            intent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            filePickerLauncher.launch(Intent.createChooser(intent, "Chọn tệp"));
+        });
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        btnUpload.setOnClickListener(v -> {
+            if (selectedFileUri != null && selectedFileName != null) {
+                btnUpload.setEnabled(false);
+                btnSelectFile.setEnabled(false);
+                progressBar.setVisibility(View.VISIBLE);
+                tvProgress.setVisibility(View.VISIBLE);
+
+                fileUploadManager.uploadFile(selectedFileUri, selectedFileName, new FileUploadManager.FileUploadCallback() {
+                    @Override
+                    public void onUploadStart() {
+                        requireActivity().runOnUiThread(() -> {
+                            tvProgress.setText("Bắt đầu tải lên...");
+                        });
+                    }
+
+                    @Override
+                    public void onUploadProgress(String message) {
+                        requireActivity().runOnUiThread(() -> {
+                            tvProgress.setText(message);
+                        });
+                    }
+
+                    @Override
+                    public void onUploadSuccess(MediaFile mediaFile) {
+                        requireActivity().runOnUiThread(() -> {
+                            dialog.dismiss();
+                            Toast.makeText(getContext(), "Tải lên tài liệu thành công!", Toast.LENGTH_SHORT).show();
+                            // Refresh the documents list
+                            loadDocuments();
+                        });
+                    }
+
+                    @Override
+                    public void onUploadError(String error) {
+                        requireActivity().runOnUiThread(() -> {
+                            btnUpload.setEnabled(true);
+                            btnSelectFile.setEnabled(true);
+                            progressBar.setVisibility(View.GONE);
+                            tvProgress.setVisibility(View.GONE);
+                            Toast.makeText(getContext(), "Lỗi: " + error, Toast.LENGTH_LONG).show();
+                        });
+                    }
+                });
+            }
+        });
+
+        // Listen for file selection result
+        getParentFragmentManager().setFragmentResultListener("file_selected", this, (requestKey, bundle) -> {
+            if (selectedFileUri != null && selectedFileName != null) {
+                tvSelectedFile.setText("Đã chọn: " + selectedFileName);
+                tvSelectedFile.setVisibility(View.VISIBLE);
+                btnUpload.setEnabled(true);
+            }
+        });
+
+        dialog.show();
+
+        // Trigger result listener when file is selected
+        if (selectedFileUri != null && selectedFileName != null) {
+            tvSelectedFile.setText("Đã chọn: " + selectedFileName);
             tvSelectedFile.setVisibility(View.VISIBLE);
             btnUpload.setEnabled(true);
         }

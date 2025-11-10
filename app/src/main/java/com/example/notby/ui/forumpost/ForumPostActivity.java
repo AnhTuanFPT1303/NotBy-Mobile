@@ -211,8 +211,7 @@ public class ForumPostActivity extends AppCompatActivity {
                                     deleteTempFile(uploadFile);
                                     if (resp2.isSuccessful() && resp2.body() != null && resp2.body().isStatus()) {
                                         MediaFile created = resp2.body().getData();
-                                        String fileId = created != null ? created.getId() : null;
-                                        createForumPostAfterFile(title, content, fileId);
+                                        createForumPostAfterFile(title, content, created);
                                     } else {
                                         Toast.makeText(ForumPostActivity.this, "Failed to create media file", Toast.LENGTH_SHORT).show();
                                         resetPostButton();
@@ -264,7 +263,7 @@ public class ForumPostActivity extends AppCompatActivity {
         }
     }
 
-    private void createForumPostAfterFile(String title, String content, String fileId) {
+    private void createForumPostAfterFile(String title, String content, MediaFile file) {
         String authorId = getAuthorId();
         if (authorId == null || authorId.isEmpty()) {
             Toast.makeText(this, "Please log in to create a post", Toast.LENGTH_SHORT).show();
@@ -273,7 +272,9 @@ public class ForumPostActivity extends AppCompatActivity {
         }
 
         ForumPost post = new ForumPost(title, content, authorId);
-        if (fileId != null) post.setFileElement(new com.google.gson.JsonPrimitive(fileId));
+        if (file != null) {
+            post.setFileId(file.getId()); // Set only the file ID for API request
+        }
 
         ApiClient.getForumPostApi().create(post).enqueue(new Callback<ApiResponse<ForumPost>>() {
             @Override
