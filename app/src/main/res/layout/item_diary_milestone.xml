@@ -1,92 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginTop="8dp"
-    android:layout_marginBottom="8dp"
-    app:cardCornerRadius="8dp"
-    app:cardElevation="2dp">
+    android:orientation="vertical"
+    android:padding="16dp">
 
-    <RelativeLayout
-        android:layout_width="match_parent"
+    <TextView
+        android:id="@+id/milestone_title"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:padding="16dp">
+        android:text="Bé biết lật"
+        android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/milestone_title"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Be cao hon 2m"
-            android:textColor="@android:color/black"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+    <TextView
+        android:id="@+id/milestone_date"
+        android:layout_width="wrap_content"
+        android.layout_height="wrap_content"
+        android:text="20/12/2024" />
 
-        <TextView
-            android:id="@+id/milestone_date"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@+id/milestone_title"
-            android:layout_marginTop="4dp"
-            android:text="4/10/2025" />
-        
-        <TextView
-            android:id="@+id/milestone_tag"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignBaseline="@+id/milestone_date"
-            android:layout_marginStart="8dp"
-            android:layout_toEndOf="@+id/milestone_date"
-            android:background="@drawable/tag_background"
-            android:paddingStart="8dp"
-            android:paddingTop="2dp"
-            android:paddingEnd="8dp"
-            android:paddingBottom="2dp"
-            android:text="Xã hội"
-            android:textColor="#0369A1"
-            android:textSize="12sp" />
+    <TextView
+        android:id="@+id/milestone_notes"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android.text="Bé lật được từ phải sang trái" />
 
-        <TextView
-            android:id="@+id/milestone_description"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@+id/milestone_date"
-            android:layout_marginTop="8dp"
-            android:text="Cao hon ngay 12" />
-
-        <TextView
-            android:id="@+id/milestone_image_count"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@+id/milestone_description"
-            android:layout_marginTop="8dp"
-            android:drawablePadding="4dp"
-            android:gravity="center_vertical"
-            android:text="1 ảnh"
-            app:drawableStartCompat="@drawable/ic_image" />
-
-
-        <!-- Action Buttons -->
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@+id/milestone_image_count"
-            android:layout_alignParentEnd="true"
-            android:layout_marginTop="16dp">
-
-            <com.google.android.material.button.MaterialButton
-                style="@style/Widget.MaterialComponents.Button.TextButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Xem ảnh" />
-
-            <com.google.android.material.button.MaterialButton
-                style="@style/Widget.MaterialComponents.Button.TextButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:text="Xem chi tiết" />
-        </LinearLayout>
-        
-    </RelativeLayout>
-</com.google.android.material.card.MaterialCardView>
+</LinearLayout>

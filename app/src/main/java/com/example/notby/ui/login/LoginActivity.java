@@ -112,6 +112,7 @@ public class LoginActivity extends AppCompatActivity {
                             String userId = null;
                             String email = null;
                             String name = null;
+                            String parentId = null;
 
                             // Check if response has 'data' wrapper
                             if (response.has("data")) {
@@ -125,12 +126,14 @@ public class LoginActivity extends AppCompatActivity {
                                     if (userId == null) userId = user.optString("_id", null);
                                     email = user.optString("email", "");
                                     name = user.optString("name", "");
+                                    parentId = user.optString("parentId", null);
                                 } else {
                                     // User data might be directly in data
                                     userId = data.optString("id", null);
                                     if (userId == null) userId = data.optString("_id", null);
                                     email = data.optString("email", "");
                                     name = data.optString("name", "");
+                                    parentId = data.optString("parentId", null);
                                 }
                             } else {
                                 // Token might be at root level
@@ -143,12 +146,14 @@ public class LoginActivity extends AppCompatActivity {
                                     if (userId == null) userId = user.optString("_id", null);
                                     email = user.optString("email", "");
                                     name = user.optString("name", "");
+                                    parentId = user.optString("parentId", null);
                                 } else {
                                     // User data might be at root level
                                     userId = response.optString("id", null);
                                     if (userId == null) userId = response.optString("_id", null);
                                     email = response.optString("email", "");
                                     name = response.optString("name", "");
+                                    parentId = response.optString("parentId", null);
                                 }
                             }
 
@@ -158,10 +163,11 @@ public class LoginActivity extends AppCompatActivity {
                                 Log.e(TAG, "No token found in response!");
                             }
 
-                            if (userId != null && !userId.isEmpty()) {
-                                tokenManager.saveUserData(userId, email, name);
+                            if (parentId != null && !parentId.isEmpty()) {
+                                // Adjusted to save parentId instead of userId
+                                tokenManager.saveUserData(parentId, email, name);
                             } else {
-                                Log.e(TAG, "No user ID found in response!");
+                                Log.e(TAG, "No parent ID found in response!");
                             }
 
                         } catch (JSONException e) {

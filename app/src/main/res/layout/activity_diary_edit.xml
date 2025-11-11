@@ -14,21 +14,21 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Thêm cột mốc phát triển mới"
+            android:text="Chỉnh sửa cột mốc"
             android:textColor="@android:color/black"
             android:textSize="20sp"
             android:textStyle="bold" />
 
         <!-- Title Field -->
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/title_layout"
+            android:id="@+id/edit_title_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
             android:hint="Tiêu đề *">
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/title_edit_text"
+                android:id="@+id/edit_title_edit_text"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
 
@@ -36,7 +36,7 @@
 
         <!-- Category Spinner -->
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/category_layout"
+            android:id="@+id/edit_category_layout"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -44,7 +44,7 @@
             android:hint="Chọn danh mục">
 
             <AutoCompleteTextView
-                android:id="@+id/category_auto_complete"
+                android:id="@+id/edit_category_auto_complete"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="none" />
@@ -53,14 +53,14 @@
 
         <!-- Description Field -->
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/description_layout"
+            android:id="@+id/edit_description_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:hint="Mô tả chi tiết">
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/description_edit_text"
+                android:id="@+id/edit_description_edit_text"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="top"
@@ -78,7 +78,7 @@
             android:textStyle="bold" />
 
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/image_upload_card"
+            android:id="@+id/edit_image_upload_card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -94,6 +94,7 @@
                 android:padding="32dp">
 
                 <ImageView
+                    android:id="@+id/edit_image_view"
                     android:layout_width="48dp"
                     android:layout_height="48dp"
                     android:src="@drawable/ic_camera_upload" />
@@ -113,28 +114,14 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Checkboxes -->
-        <CheckBox
-            android:id="@+id/first_time_checkbox"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Đây là lần đầu tiên" />
-
-        <CheckBox
-            android:id="@+id/milestone_checkbox"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Đánh dấu là cột mốc quan trọng" />
-
         <!-- Save Button -->
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/save_button"
+            android:id="@+id/edit_save_button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
             android:padding="12dp"
-            android:text="Lưu cột mốc" />
+            android:text="Lưu" />
 
     </LinearLayout>
 </ScrollView>
