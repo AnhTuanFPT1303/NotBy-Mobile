@@ -25,8 +25,11 @@ public class ForumPost {
     @SerializedName("Author")
     private JsonElement author; // can be a String id or an object
 
+    @SerializedName("File")
+    private MediaFile file; // can be a String id or a MediaFile object
+
     @SerializedName("FileId")
-    private String fileId;
+    private String fileId; // Used when creating posts - send only the ID
 
     @SerializedName("created_at")
     private String createdAt;
@@ -50,6 +53,10 @@ public class ForumPost {
         }
     }
 
+    public MediaFile getFile() {
+        return file;
+    }
+
     // Getters
     public String getId() { return id; }
     public String getTitle() { return title; }
@@ -62,7 +69,13 @@ public class ForumPost {
         return getAuthorId();
     }
 
-    public String getFileId() { return fileId; }
+    // Helper to get fileId
+    public String getFileId() {
+        if (fileId != null) return fileId; // Return explicit fileId if set
+        if (file == null) return null;
+        return file.getId(); // Fallback to file's ID
+    }
+
     public String getCreatedAt() { return createdAt; }
     public String getUpdatedAt() { return updatedAt; }
 
@@ -110,7 +123,12 @@ public class ForumPost {
     // Accept a JsonElement (used by Gson during deserialization)
     public void setAuthorElement(JsonElement authorElement) { this.author = authorElement; }
 
+    // Setter for file
+    public void setFile(MediaFile file) { this.file = file; }
+
+    // Setter for fileId (used when creating posts)
     public void setFileId(String fileId) { this.fileId = fileId; }
+
     public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
     public void setUpdatedAt(String updatedAt) { this.updatedAt = updatedAt; }
 }

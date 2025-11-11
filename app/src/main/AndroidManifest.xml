@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
     <application
         android:allowBackup="true"
@@ -24,8 +25,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        
+
         <activity android:name=".ui.forumpost.ForumPostActivity" />
+        <activity android:name=".ui.dashboard.DashboardActivity"/>
+        <activity android:name=".ui.postdetail.PostDetailActivity"
+            android:parentActivityName=".ui.forumpost.ForumPostActivity" />
+        <activity android:name=".ui.library.LibraryActivity"
+            android:parentActivityName=".ui.dashboard.DashboardActivity" />
 
     </application>
 

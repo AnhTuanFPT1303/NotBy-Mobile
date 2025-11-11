@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Post Detail -->
+    <string name="post_author_format">By %s</string>
+    <string name="post_author_anonymous">By Anonymous</string>
+    <string name="comment_empty_message">Please enter a comment</string>
+    <string name="login_required_message">Please login to comment</string>
+    <string name="comment_posted_message">Comment posted!</string>
+    <string name="comment_post_failed_message">Failed to post comment: %s</string>
+    <string name="comment_post_failed">Failed to post comment</string>
+    <string name="comment_liked_message">Comment liked!</string>
+    <string name="error_message">Error: %s</string>
+</resources>

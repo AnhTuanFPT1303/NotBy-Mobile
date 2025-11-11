@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/action_personal_info"
+        android:icon="@drawable/ic_person"
+        android:title="Thông tin cá nhân" />
+    <item
+        android:id="@+id/action_manage_children"
+        android:icon="@drawable/ic_manage_accounts"
+        android:title="Quản lý các bé" />
+    <item
+        android:id="@+id/action_settings"
+        android:icon="@drawable/ic_settings"
+        android:title="Cài đặt" />
+    <item
+        android:id="@+id/action_notifications"
+        android:icon="@drawable/ic_notifications"
+        android:title="Thông báo" />
+    <item
+        android:id="@+id/action_logout"
+        android:icon="@drawable/ic_logout"
+        android:title="Đăng xuất" />
+</menu>

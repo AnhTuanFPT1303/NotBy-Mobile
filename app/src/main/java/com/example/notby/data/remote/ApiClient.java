@@ -7,9 +7,11 @@ public class ApiClient {
     private static final String BASE_URL = "https://notby-be-8q9y.onrender.com/";
     private static Retrofit retrofit = null;
     private static ForumPostApi forumPostApi = null;
+    private static ForumCommentApi forumCommentApi = null;
     private static UserApi userApi = null;
     private static MediafileApi mediafileApi = null;
     private static CloudinaryApi cloudinaryApi = null;
+    private static ArticleApi articleApi = null;
 
     public static Retrofit getClient() {
         if (retrofit == null) {
@@ -27,6 +29,13 @@ public class ApiClient {
         }
         return forumPostApi;
     }
+    public static ForumCommentApi getForumCommentApi() {
+        if (forumCommentApi == null) {
+            forumCommentApi = getClient().create(ForumCommentApi.class);
+        }
+        return forumCommentApi;
+    }
+
 
     public static UserApi getUserApi() {
         if (userApi == null) {
@@ -47,5 +56,12 @@ public class ApiClient {
             cloudinaryApi = getClient().create(CloudinaryApi.class);
         }
         return cloudinaryApi;
+    }
+
+    public static ArticleApi getArticleApi() {
+        if (articleApi == null) {
+            articleApi = getClient().create(ArticleApi.class);
+        }
+        return articleApi;
     }
 }

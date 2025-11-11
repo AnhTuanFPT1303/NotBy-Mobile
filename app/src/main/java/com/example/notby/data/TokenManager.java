@@ -2,6 +2,8 @@ package com.example.notby.data;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.util.Base64;
+import org.json.JSONObject;
 
 public class TokenManager {
     private static final String PREF_NAME = "NotByPrefs";
@@ -55,4 +57,3 @@ public class TokenManager {
         editor.apply();
     }
 }
-
