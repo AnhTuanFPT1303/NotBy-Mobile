@@ -1,5 +1,6 @@
 package com.example.notby.ui.diary;
 
+import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
@@ -14,10 +15,17 @@ public class DiaryViewPagerAdapter extends FragmentStateAdapter {
     @NonNull
     @Override
     public Fragment createFragment(int position) {
-        if (position == 1) {
-            return new DiaryAddFragment();
+        try {
+            Log.d("DiaryViewPagerAdapter", "Creating fragment for position: " + position);
+            if (position == 1) {
+                return new DiaryAddFragment();
+            }
+            return new DiaryListFragment();
+        } catch (Exception e) {
+            Log.e("DiaryViewPagerAdapter", "Error creating fragment at position " + position, e);
+            // Return a safe default fragment
+            return new DiaryListFragment();
         }
-        return new DiaryListFragment();
     }
 
     @Override

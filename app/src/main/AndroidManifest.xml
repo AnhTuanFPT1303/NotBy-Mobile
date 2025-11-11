@@ -28,8 +28,17 @@
 
         <activity android:name=".ui.forumpost.ForumPostActivity" />
         <activity android:name=".ui.dashboard.DashboardActivity"/>
+        <activity android:name=".ui.events.EventActivity" android:parentActivityName=".ui.dashboard.DashboardActivity" />
         <activity android:name=".ui.postdetail.PostDetailActivity"
             android:parentActivityName=".ui.forumpost.ForumPostActivity" />
+        <activity android:name=".ui.diary.DiaryDetailActivity"
+            android:parentActivityName=".ui.dashboard.DashboardActivity" />
+        <activity android:name=".ui.diary.DiaryEditActivity"
+            android:parentActivityName=".ui.diary.DiaryDetailActivity" />
+        <activity android:name=".ui.baby.BabyListActivity"
+            android:parentActivityName=".ui.dashboard.DashboardActivity" />
+        <activity android:name=".ui.baby.AddBabyActivity"
+            android:parentActivityName=".ui.baby.BabyListActivity" />
         <activity android:name=".ui.library.LibraryActivity"
             android:parentActivityName=".ui.dashboard.DashboardActivity" />
 

@@ -47,6 +47,7 @@
 
     <!-- Child Selector Card -->
     <com.google.android.material.card.MaterialCardView
+        android:id="@+id/child_card"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
@@ -56,6 +57,7 @@
         app:strokeWidth="1dp">
 
         <RelativeLayout
+            android:id="@+id/child_card_root"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="12dp">
@@ -72,6 +74,7 @@
                 android:textSize="20sp" />
 
             <LinearLayout
+                android:id="@+id/child_info"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
@@ -95,6 +98,7 @@
             </LinearLayout>
 
             <ImageView
+                android:id="@+id/child_action"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentEnd="true"
