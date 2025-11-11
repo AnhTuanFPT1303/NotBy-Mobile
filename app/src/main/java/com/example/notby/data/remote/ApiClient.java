@@ -23,7 +23,7 @@ public class ApiClient {
     private static BabiesApi babiesApi = null;
     private static DiaryEntriesApi diaryEntriesApi = null;
 
-
+    private static EventApi eventApi = null;
     public static Retrofit getClient() {
         if (retrofit == null) {
             // Create Gson with lenient parsing to handle potential field mismatches
@@ -107,6 +107,12 @@ public class ApiClient {
         return forumCommentApi;
     }
 
+    public static EventApi getEventApi(Context context) {
+        if (eventApi == null) {
+            eventApi = getClientWithAuth(context).create(EventApi.class);
+        }
+        return eventApi;
+    }
 
     public static UserApi getUserApi() {
         if (userApi == null) {

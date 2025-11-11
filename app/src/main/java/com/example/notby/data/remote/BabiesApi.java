@@ -8,7 +8,9 @@ import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.DELETE;
 import retrofit2.http.GET;
+import retrofit2.http.PATCH;
 import retrofit2.http.POST;
+import retrofit2.http.PUT;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 
@@ -24,6 +26,11 @@ public interface BabiesApi {
 
     @POST("babies")
     Call<ApiResponse<Baby>> createBaby(@Body Baby baby);
+
+    @PATCH("babies/{id}")
+    Call<ApiResponse<Baby>> updateBaby(@Path("id") String id, @Body Baby baby);
     @DELETE("babies/{id}")
     Call<ApiResponse<Void>> deleteBaby(@Path("id") String id);
+    
+    
 }

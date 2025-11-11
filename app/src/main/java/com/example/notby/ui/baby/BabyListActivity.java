@@ -27,9 +27,10 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class BabyListActivity extends AppCompatActivity implements BabyAdapter.OnBabyDeletedListener {
+public class BabyListActivity extends AppCompatActivity implements BabyAdapter.OnBabyDeletedListener, BabyAdapter.OnBabyEditedListener, BabyAdapter.OnBabySelectedListener {
 
     private static final int ADD_BABY_REQUEST = 1;
+    private static final int EDIT_BABY_REQUEST = 2;
 
     private RecyclerView recyclerView;
     private BabyAdapter adapter;
@@ -57,7 +58,7 @@ public class BabyListActivity extends AppCompatActivity implements BabyAdapter.O
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == ADD_BABY_REQUEST && resultCode == RESULT_OK) {
+        if ((requestCode == ADD_BABY_REQUEST || requestCode == EDIT_BABY_REQUEST) && resultCode == RESULT_OK) {
             loadBabies();
         }
     }
@@ -88,7 +89,7 @@ public class BabyListActivity extends AppCompatActivity implements BabyAdapter.O
                     if (babiesResponse != null && babiesResponse.getBabies() != null) {
                         babyList = babiesResponse.getBabies();
                         if (!babyList.isEmpty()) {
-                            adapter = new BabyAdapter(babyList, BabyListActivity.this);
+                            adapter = new BabyAdapter(babyList, BabyListActivity.this, BabyListActivity.this, BabyListActivity.this);
                             recyclerView.setAdapter(adapter);
                         }
                     }
@@ -112,6 +113,21 @@ public class BabyListActivity extends AppCompatActivity implements BabyAdapter.O
                 .setPositiveButton("Xóa", (dialog, which) -> deleteBaby(baby))
                 .setNegativeButton("Hủy", null)
                 .show();
+    }
+
+    @Override
+    public void onBabyEdited(Baby baby) {
+        Intent intent = new Intent(this, AddBabyActivity.class);
+        intent.putExtra("baby_id", baby.getId());
+        startActivityForResult(intent, EDIT_BABY_REQUEST);
+    }
+
+    @Override
+    public void onBabySelected(Baby baby) {
+        Intent resultIntent = new Intent();
+        resultIntent.putExtra("selected_baby_id", baby.getId());
+        setResult(RESULT_OK, resultIntent);
+        finish();
     }
 
     private void deleteBaby(Baby baby) {

@@ -10,6 +10,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
@@ -34,13 +36,19 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+import java.util.TimeZone;
 
 public class DashboardActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     private DrawerLayout drawerLayout;
     private TokenManager tokenManager;
     private String currentBabyId = null;
+    private ActivityResultLauncher<Intent> babyListLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,14 +67,12 @@ public class DashboardActivity extends AppCompatActivity implements NavigationVi
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
 
-        // Handle system back (replace deprecated onBackPressed)
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
                 if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
                     drawerLayout.closeDrawer(GravityCompat.START);
                 } else {
-                    // default behavior
                     finish();
                 }
             }
@@ -74,80 +80,89 @@ public class DashboardActivity extends AppCompatActivity implements NavigationVi
 
         tokenManager = new TokenManager(this);
 
-        // Try to load child's data and populate nav header
+        babyListLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    String selectedBabyId = result.getData().getStringExtra("selected_baby_id");
+                    if (selectedBabyId != null) {
+                        tokenManager.saveChildId(selectedBabyId);
+                        loadChildForCurrentUser(); // Reload data for the new baby
+                    }
+                }
+            });
+
         loadChildForCurrentUser();
+        updateNavFooter();
 
-        // Set OverviewFragment as the default screen
-        if (savedInstanceState == null) {
-            getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, new OverviewFragment()).commit();
-            navigationView.setCheckedItem(R.id.nav_overview);
-        }
-
-        // --- Handle Footer Click ---
         View navFooter = navigationView.findViewById(R.id.nav_footer_root);
         navFooter.setOnClickListener(this::showFooterPopupMenu);
 
-        // Wire header clicks (if header already populated it will be overwritten later)
         View header = navigationView.getHeaderView(0);
         if (header != null) {
             View childCard = header.findViewById(R.id.child_card_root);
             View childAction = header.findViewById(R.id.child_action);
             View.OnClickListener headerClick = v -> {
                 Intent intent = new Intent(DashboardActivity.this, BabyListActivity.class);
-                startActivity(intent);
+                babyListLauncher.launch(intent);
             };
             if (childCard != null) childCard.setOnClickListener(headerClick);
             if (childAction != null) childAction.setOnClickListener(headerClick);
         }
     }
 
+    private void showOverviewForBaby(Baby baby) {
+        if (baby == null || baby.getId() == null) {
+            Log.e("DashboardActivity", "Cannot show overview, baby or baby ID is null");
+            getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container, new Fragment()) // Show a blank fragment
+                .commit();
+            return;
+        }
+
+        Log.d("DashboardActivity", "Showing overview for baby: " + baby.getFirstName() + " (ID: " + baby.getId() + ")");
+
+        OverviewFragment overviewFragment = OverviewFragment.newInstance(
+            baby.getFirstName() + " " + baby.getLastName(),
+            baby.getDob(),
+            baby.getId()
+        );
+
+        getSupportFragmentManager().beginTransaction()
+            .replace(R.id.fragment_container, overviewFragment)
+            .commit();
+
+        NavigationView navigationView = findViewById(R.id.nav_view);
+        navigationView.setCheckedItem(R.id.nav_overview);
+    }
+
     private void loadChildForCurrentUser() {
-        // Get JWT token and extract user ID from it
         String token = tokenManager.getToken();
         if (token == null || token.isEmpty()) {
             Log.w("DashboardActivity", "No JWT token stored - user not logged in");
             return;
         }
 
-        // Extract user ID from JWT token
         String userId = tokenManager.getUserIdFromToken();
         if (userId == null) {
             Log.e("DashboardActivity", "Failed to extract user ID from JWT token");
             return;
         }
 
-        Log.d("DashboardActivity", "Loading babies for parentId=" + userId + " (extracted from JWT)");
+        Log.d("DashboardActivity", "Loading babies for parentId=" + userId);
 
-        // Log token presence (masked) for debug
-        String tail = token.length() > 8 ? token.substring(token.length() - 8) : token;
-        Log.d("DashboardActivity", "JWT present (masked) ****" + tail);
-
-        // Use non-authenticated API client for baby operations
         BabiesApi babiesApi = ApiClient.getBabiesApi();
-
-        // If we have a saved childId, try fetching it directly
-
         String savedChildId = tokenManager.getChildId();
+
         if (savedChildId != null) {
             Log.d("DashboardActivity", "Found saved childId=" + savedChildId + ", fetching via /babies/{id}");
-
-            Call<ApiResponse<Baby>> byIdCall = babiesApi.getById(savedChildId);
-
-            byIdCall.enqueue(new Callback<ApiResponse<Baby>>() {
+            babiesApi.getById(savedChildId).enqueue(new Callback<ApiResponse<Baby>>() {
                 @Override
                 public void onResponse(@NonNull Call<ApiResponse<Baby>> call, @NonNull Response<ApiResponse<Baby>> response) {
-                    if (response.isSuccessful() && response.body() != null) {
-                        ApiResponse<Baby> apiResponse = response.body();
-                        Baby baby = apiResponse.getData();
-
-                        if (baby != null) {
-                            currentBabyId = baby.getId();
-                            updateNavHeaderWithBaby(baby);
-                            Log.d("DashboardActivity", "Loaded baby by id=" + currentBabyId);
-                        } else {
-                            Log.w("DashboardActivity", "Response body missing 'data' field, falling back to findAll");
-                            fetchBabiesByParent(babiesApi, userId);
-                        }
+                    if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
+                        Baby baby = response.body().getData();
+                        updateNavHeaderWithBaby(baby);
+                        Log.d("DashboardActivity", "Loaded baby by id=" + baby.getId());
                     } else {
                         Log.w("DashboardActivity", "getById didn't return valid baby, falling back to findAll");
                         fetchBabiesByParent(babiesApi, userId);
@@ -165,177 +180,74 @@ public class DashboardActivity extends AppCompatActivity implements NavigationVi
         }
     }
 
-
-    // Trong file: DashboardActivity.java
-
     private void fetchBabiesByParent(BabiesApi babiesApi, String parentId) {
         Log.d("DashboardActivity", "Fetching babies for parentId: " + parentId);
-
-        // Use non-authenticated API client to fetch babies directly
-        Call<ApiResponse<BabiesResponse>> call = babiesApi.findAll(parentId);
-
-        call.enqueue(new Callback<ApiResponse<BabiesResponse>>() {
+        babiesApi.findAll(parentId).enqueue(new Callback<ApiResponse<BabiesResponse>>() {
             @Override
             public void onResponse(@NonNull Call<ApiResponse<BabiesResponse>> call, @NonNull Response<ApiResponse<BabiesResponse>> response) {
-                try {
-                    Log.d("DashboardActivity", "Response received - Status: " + response.isSuccessful() + ", Code: " + response.code());
-
-                    if (response.isSuccessful() && response.body() != null) {
-                        ApiResponse<BabiesResponse> apiResponse = response.body();
-                        Log.d("DashboardActivity", "ApiResponse status: " + apiResponse.isStatus());
-
-                        BabiesResponse babiesResponse = apiResponse.getData();
-
-                        if (babiesResponse != null) {
-                            Log.d("DashboardActivity", "BabiesResponse received, babies count: " +
-                                (babiesResponse.getBabies() != null ? babiesResponse.getBabies().size() : "null"));
-
-                            if (babiesResponse.getBabies() != null && !babiesResponse.getBabies().isEmpty()) {
-                                List<Baby> babies = babiesResponse.getBabies();
-                                Baby baby = babies.get(0);
-
-                                Log.d("DashboardActivity", "Baby received - ID: " + baby.getId() +
-                                    ", FirstName: " + baby.getFirstName() +
-                                    ", LastName: " + baby.getLastName());
-
-                                // persist child id
-                                tokenManager.saveChildId(baby.getId());
-                                currentBabyId = baby.getId();
-                                updateNavHeaderWithBaby(baby);
-
-                                Log.d("DashboardActivity", "Successfully updated nav header with baby");
-                            } else {
-                                Log.w("DashboardActivity", "Babies list is null or empty");
-                                attemptRawInspect(babiesApi, parentId);
-                            }
-                        } else {
-                            Log.w("DashboardActivity", "BabiesResponse data is null");
-                            attemptRawInspect(babiesApi, parentId);
-                        }
+                if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
+                    List<Baby> babies = response.body().getData().getBabies();
+                    if (babies != null && !babies.isEmpty()) {
+                        Baby firstBaby = babies.get(0);
+                        tokenManager.saveChildId(firstBaby.getId());
+                        updateNavHeaderWithBaby(firstBaby);
                     } else {
-                        // Server returned error (4xx, 5xx)
-                        try (ResponseBody responseBody = response.errorBody()) {
-                            String err = responseBody != null ? responseBody.string() : "<empty>";
-                            Log.e("DashboardActivity", "API error fetching babies: code=" + response.code() + " body=" + err);
-                        } catch (IOException e) {
-                            Log.e("DashboardActivity", "Error reading response body", e);
-                        }
-                        attemptRawInspect(babiesApi, parentId);
+                        Log.w("DashboardActivity", "Babies list is empty for this user.");
                     }
-                } catch (Exception e) {
-                    Log.e("DashboardActivity", "Exception in onResponse: " + e.getClass().getSimpleName() + " - " + e.getMessage(), e);
-                    Toast.makeText(DashboardActivity.this, "Error processing baby data: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                } else {
+                     try (ResponseBody responseBody = response.errorBody()) {
+                        String err = responseBody != null ? responseBody.string() : "<empty>";
+                        Log.e("DashboardActivity", "API error fetching babies: code=" + response.code() + " body=" + err);
+                    } catch (IOException e) {
+                        Log.e("DashboardActivity", "Error reading response body", e);
+                    }
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<ApiResponse<BabiesResponse>> call, @NonNull Throwable t) {
-                Log.e("DashboardActivity", "API call failure: " + t.getClass().getSimpleName() + " - " + t.getMessage(), t);
+                Log.e("DashboardActivity", "API call to fetch babies failed", t);
                 Toast.makeText(DashboardActivity.this, "Network error loading baby data: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    private void attemptRawInspect(BabiesApi babiesApi, String userId) {
-        Log.d("DashboardActivity", "Attempting fallback raw call to inspect response shape");
-        try {
-            Call<Object> raw = babiesApi.findAllRaw(userId);
-            raw.enqueue(new Callback<Object>() {
-                @Override
-                public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {
-                    if (response.isSuccessful() && response.body() != null) {
-                        Log.d("DashboardActivity", "Raw response body: " + response.body());
-                        // parsing handled elsewhere previously; keep simple here
-                    } else {
-                        // Ensure proper use of try-with-resources for ResponseBody in all instances
-                        try (ResponseBody responseBody = response.errorBody()) {
-                            String err = responseBody != null ? responseBody.string() : "<empty>";
-                            Log.e("DashboardActivity", "Raw API error code=" + response.code() + " body=" + err);
-                        } catch (IOException e) {
-                            Log.e("DashboardActivity", "Error reading raw errorBody", e);
-                        }
-                    }
-                }
-
-                @Override
-                public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {
-                    Log.e("DashboardActivity", "Raw API call failed", t);
-                }
-            });
-        } catch (Exception ex) {
-            Log.e("DashboardActivity", "Fallback raw call failed", ex);
-        }
-    }
-
     private void updateNavHeaderWithBaby(Baby baby) {
+        // First, show the main content
+        showOverviewForBaby(baby);
+
+        // Then, update the navigation UI. This is less critical and can fail gracefully.
         try {
             Log.d("DashboardActivity", "Updating nav header with baby: " + baby.getId());
-
             NavigationView navigationView = findViewById(R.id.nav_view);
-            if (navigationView == null) {
-                Log.w("DashboardActivity", "NavigationView is null");
-                return;
-            }
-
+            if (navigationView == null) return;
+            
             View header = navigationView.getHeaderView(0);
-            if (header == null) {
-                Log.w("DashboardActivity", "Navigation header view is null");
-                return;
-            }
+            if (header == null) return;
 
             TextView childName = header.findViewById(R.id.child_name);
             TextView childBirthday = header.findViewById(R.id.child_birthday);
             TextView childInitial = header.findViewById(R.id.child_initial);
 
-            // Safely handle baby data
-            String firstName = baby.getFirstName();
-            String lastName = baby.getLastName();
-            String dob = baby.getDob();
-
-            Log.d("DashboardActivity", "Baby data - FirstName: " + firstName + ", LastName: " + lastName + ", DOB: " + dob);
-
-            if (childName != null) {
-                try {
-                    String fullName;
-                    if (firstName != null && lastName != null) {
-                        fullName = getString(R.string.child_name_template, firstName, lastName);
-                    } else if (firstName != null) {
-                        fullName = firstName;
-                    } else {
-                        fullName = "Unknown";
-                    }
-                    childName.setText(fullName);
-                    Log.d("DashboardActivity", "Set child name: " + fullName);
-                } catch (Exception e) {
-                    Log.e("DashboardActivity", "Error setting child name: " + e.getMessage(), e);
-                    childName.setText(firstName != null ? firstName : "Unknown");
-                }
+            if(childName != null && baby.getFirstName() != null) {
+                childName.setText("Bé " + baby.getFirstName());
             }
 
-            if (childBirthday != null) {
-                String birthday = dob != null ? dob : "";
-                childBirthday.setText(birthday);
-                Log.d("DashboardActivity", "Set child birthday: " + birthday);
+            if(childBirthday != null) {
+                 childBirthday.setText(formatDate(baby.getDob()));
+            }
+           
+            if(childInitial != null && baby.getFirstName() != null && !baby.getFirstName().isEmpty()) {
+                childInitial.setText(baby.getFirstName().substring(0, 1).toUpperCase());
             }
 
-            if (childInitial != null) {
-                String initial = "";
-                if (firstName != null && !firstName.isEmpty()) {
-                    initial = firstName.substring(0, 1).toUpperCase();
-                }
-                childInitial.setText(initial);
-                Log.d("DashboardActivity", "Set child initial: " + initial);
-            }
-
-            // update current fields
             currentBabyId = baby.getId();
 
-            // ensure header actions use current id
             View childCard = header.findViewById(R.id.child_card_root);
             View childAction = header.findViewById(R.id.child_action);
             View.OnClickListener headerClick = v -> {
                 Intent intent = new Intent(DashboardActivity.this, BabyListActivity.class);
-                startActivity(intent);
+                babyListLauncher.launch(intent);
             };
             if (childCard != null) childCard.setOnClickListener(headerClick);
             if (childAction != null) childAction.setOnClickListener(headerClick);
@@ -343,8 +255,33 @@ public class DashboardActivity extends AppCompatActivity implements NavigationVi
             Log.d("DashboardActivity", "Successfully updated nav header");
 
         } catch (Exception e) {
-            Log.e("DashboardActivity", "Exception in updateNavHeaderWithBaby: " + e.getClass().getSimpleName() + " - " + e.getMessage(), e);
-            Toast.makeText(this, "Error updating baby information: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Log.e("DashboardActivity", "Non-critical error updating nav header", e);
+        }
+    }
+
+    private void updateNavFooter() {
+        NavigationView navigationView = findViewById(R.id.nav_view);
+        View navFooter = navigationView.findViewById(R.id.nav_footer_root);
+        TextView parentName = navFooter.findViewById(R.id.parent_name);
+        TextView parentInitial = navFooter.findViewById(R.id.parent_initial);
+        String userName = tokenManager.getUserName();
+        if (userName != null && !userName.isEmpty()) {
+            parentName.setText(userName);
+            parentInitial.setText(String.valueOf(userName.charAt(0)));
+        }
+    }
+
+    private String formatDate(String dateString) {
+        if (dateString == null) return "";
+        try {
+            SimpleDateFormat originalFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
+            originalFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+            SimpleDateFormat targetFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.US);
+            Date date = originalFormat.parse(dateString);
+            return targetFormat.format(date);
+        } catch (ParseException e) {
+            e.printStackTrace();
+            return dateString; // Return original string if parsing fails
         }
     }
 
@@ -354,15 +291,12 @@ public class DashboardActivity extends AppCompatActivity implements NavigationVi
         popup.setOnMenuItemClickListener(item -> {
             int itemId = item.getItemId();
             if (itemId == R.id.action_logout) {
-                // Handle logout
                 Toast.makeText(this, "Đăng xuất", Toast.LENGTH_SHORT).show();
                 return true;
             } else if (itemId == R.id.action_settings) {
-                // Handle settings
                 Toast.makeText(this, "Cài đặt", Toast.LENGTH_SHORT).show();
                 return true;
             }
-            // Add other cases for other menu items
             return false;
         });
         popup.show();
@@ -374,42 +308,28 @@ public class DashboardActivity extends AppCompatActivity implements NavigationVi
         int itemId = item.getItemId();
 
         if (itemId == R.id.nav_overview) {
-            selectedFragment = new OverviewFragment();
+            loadChildForCurrentUser(); // This will reload the baby and show the overview
         } else if (itemId == R.id.nav_stats) {
-            // selectedFragment = new StatsFragment(); // Create and use your other fragments here
+            // selectedFragment = new StatsFragment();
             Toast.makeText(this, "Thống kê", Toast.LENGTH_SHORT).show();
         } else if (itemId == R.id.nav_development_diary) {
-            selectedFragment = new DiaryFragment(); // Load the DiaryFragment
-        } else if (itemId == R.id.nav_add_photo) {
-            // Quick action: Add photo - pass child id
-            if (currentBabyId != null) {
-                Toast.makeText(this, "Add photo for baby: " + currentBabyId, Toast.LENGTH_SHORT).show();
-                // Intent intent = new Intent(this, AddPhotoActivity.class);
-                // intent.putExtra("childId", currentBabyId);
-                // startActivity(intent);
-            } else {
+            selectedFragment = new DiaryFragment();
+        } else {
+            // Handle other items or quick actions
+            if (currentBabyId == null) {
                 Toast.makeText(this, "Chưa chọn bé", Toast.LENGTH_SHORT).show();
+            } else {
+                if (itemId == R.id.nav_add_photo) {
+                    Toast.makeText(this, "Add photo for baby: " + currentBabyId, Toast.LENGTH_SHORT).show();
+                } else if (itemId == R.id.nav_add_note) {
+                    Toast.makeText(this, "Add note for baby: " + currentBabyId, Toast.LENGTH_SHORT).show();
+                } else if (itemId == R.id.nav_share) {
+                    Toast.makeText(this, "Share memory for baby: " + currentBabyId, Toast.LENGTH_SHORT).show();
+                }
             }
             drawerLayout.closeDrawer(GravityCompat.START);
-            return true;
-        } else if (itemId == R.id.nav_add_note) {
-            if (currentBabyId != null) {
-                Toast.makeText(this, "Add note for baby: " + currentBabyId, Toast.LENGTH_SHORT).show();
-                // start note activity with childId
-            } else {
-                Toast.makeText(this, "Chưa chọn bé", Toast.LENGTH_SHORT).show();
-            }
-            drawerLayout.closeDrawer(GravityCompat.START);
-            return true;
-        } else if (itemId == R.id.nav_share) {
-            if (currentBabyId != null) {
-                Toast.makeText(this, "Share memory for baby: " + currentBabyId, Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this, "Chưa chọn bé", Toast.LENGTH_SHORT).show();
-            }
-            drawerLayout.closeDrawer(GravityCompat.START);
-            return true;
-        } // Add other else-if blocks for other menu items
+            return true; // Return early for quick actions
+        }
 
         if (selectedFragment != null) {
             getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, selectedFragment).commit();
