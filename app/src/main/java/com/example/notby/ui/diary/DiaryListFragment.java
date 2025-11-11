@@ -16,10 +16,14 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.notby.R;
 import com.example.notby.data.TokenManager;
 import com.example.notby.data.model.ApiResponse;
+import com.example.notby.data.model.DiaryEntriesResponse;
 import com.example.notby.data.model.DiaryEntry;
 import com.example.notby.data.remote.ApiClient;
 import com.example.notby.data.remote.DiaryEntriesApi;
+import com.google.android.material.tabs.TabLayout;
+import com.google.gson.Gson;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import retrofit2.Call;
@@ -31,102 +35,106 @@ public class DiaryListFragment extends Fragment {
     private RecyclerView recyclerView;
     private DiaryAdapter adapter;
     private TokenManager tokenManager;
+    private TabLayout tabLayout;
+    private List<DiaryEntry> allEntries = new ArrayList<>();
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        try {
-            Log.d("DiaryListFragment", "onCreateView started");
-            View view = inflater.inflate(R.layout.fragment_diary_list, container, false);
+        View view = inflater.inflate(R.layout.fragment_diary_list, container, false);
 
-            recyclerView = view.findViewById(R.id.milestones_recycler_view);
-            if (recyclerView == null) {
-                Log.e("DiaryListFragment", "RecyclerView not found in layout");
-                return view;
+        recyclerView = view.findViewById(R.id.milestones_recycler_view);
+        tabLayout = view.findViewById(R.id.filter_tabs);
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+
+        tokenManager = new TokenManager(requireContext());
+        
+        setupTabs();
+        
+        return view;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        loadDiaryEntries();
+    }
+
+    private void setupTabs() {
+        tabLayout.addTab(tabLayout.newTab().setText("Tất cả"));
+        tabLayout.addTab(tabLayout.newTab().setText("Vận động"));
+        tabLayout.addTab(tabLayout.newTab().setText("Ngôn ngữ"));
+        tabLayout.addTab(tabLayout.newTab().setText("Dinh dưỡng"));
+        tabLayout.addTab(tabLayout.newTab().setText("Xã hội"));
+        tabLayout.addTab(tabLayout.newTab().setText("Khác"));
+
+        tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                filterEntries(tab.getText().toString());
             }
 
-            recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) { }
 
-            tokenManager = new TokenManager(requireContext());
-            Log.d("DiaryListFragment", "TokenManager initialized");
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) { }
+        });
+    }
 
-            loadDiaryEntries();
-
-            return view;
-        } catch (Exception e) {
-            Log.e("DiaryListFragment", "Exception in onCreateView: " + e.getMessage(), e);
-            // Return a simple view to prevent complete crash
-            return inflater.inflate(android.R.layout.simple_list_item_1, container, false);
+    private void filterEntries(String category) {
+        if (category.equals("Tất cả")) {
+            adapter = new DiaryAdapter(allEntries);
+            recyclerView.setAdapter(adapter);
+            return;
         }
+
+        List<DiaryEntry> filteredList = new ArrayList<>();
+        for (DiaryEntry entry : allEntries) {
+            // This assumes the category mapping is direct. Adjust if needed.
+            if (entry.getCategory() != null && entry.getCategory().equalsIgnoreCase(category)) {
+                filteredList.add(entry);
+            }
+        }
+        adapter = new DiaryAdapter(filteredList);
+        recyclerView.setAdapter(adapter);
     }
 
     private void loadDiaryEntries() {
-        try {
-            Log.d("DiaryListFragment", "loadDiaryEntries started");
-
-            String childId = tokenManager.getChildId();
-            Log.d("DiaryListFragment", "Child ID from TokenManager: " + childId);
-
-            if (childId == null) {
-                Log.w("DiaryListFragment", "No child ID found, showing message");
-                if (getContext() != null) {
-                    Toast.makeText(getContext(), "No child selected", Toast.LENGTH_SHORT).show();
-                }
-                return;
-            }
-
-            Log.d("DiaryListFragment", "Getting DiaryEntriesApi");
-            DiaryEntriesApi apiService = ApiClient.getDiaryEntriesApi(requireContext());
-            Call<ApiResponse<List<DiaryEntry>>> call = apiService.getDiaryEntries(childId);
-
-            Log.d("DiaryListFragment", "Making API call for child: " + childId);
-            call.enqueue(new Callback<ApiResponse<List<DiaryEntry>>>() {
-                @Override
-                public void onResponse(@NonNull Call<ApiResponse<List<DiaryEntry>>> call, @NonNull Response<ApiResponse<List<DiaryEntry>>> response) {
-                    try {
-                        Log.d("DiaryListFragment", "API response received - Success: " + response.isSuccessful() + ", Code: " + response.code());
-
-                        if (response.isSuccessful() && response.body() != null) {
-                            List<DiaryEntry> diaryEntries = response.body().getData();
-                            Log.d("DiaryListFragment", "Diary entries count: " + (diaryEntries != null ? diaryEntries.size() : "null"));
-
-                            if (diaryEntries != null && !diaryEntries.isEmpty()) {
-                                adapter = new DiaryAdapter(diaryEntries);
-                                recyclerView.setAdapter(adapter);
-                                Log.d("DiaryListFragment", "Adapter set successfully");
-                            } else {
-                                Log.d("DiaryListFragment", "No diary entries found");
-                                if (getContext() != null) {
-                                    Toast.makeText(getContext(), "No diary entries found", Toast.LENGTH_SHORT).show();
-                                }
-                            }
-                        } else {
-                            Log.e("DiaryListFragment", "API response unsuccessful: " + response.message());
-                            if (getContext() != null) {
-                                Toast.makeText(getContext(), "Failed to load diary entries", Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                    } catch (Exception e) {
-                        Log.e("DiaryListFragment", "Exception in onResponse: " + e.getMessage(), e);
-                        if (getContext() != null) {
-                            Toast.makeText(getContext(), "Error processing diary data: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                }
-
-                @Override
-                public void onFailure(@NonNull Call<ApiResponse<List<DiaryEntry>>> call, @NonNull Throwable t) {
-                    Log.e("DiaryListFragment", "API call failed: " + t.getMessage(), t);
-                    if (getContext() != null) {
-                        Toast.makeText(getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                }
-            });
-        } catch (Exception e) {
-            Log.e("DiaryListFragment", "Exception in loadDiaryEntries: " + e.getMessage(), e);
-            if (getContext() != null) {
-                Toast.makeText(getContext(), "Error loading diary: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            }
+        String childId = tokenManager.getChildId();
+        if (childId == null) {
+            Toast.makeText(getContext(), "Chưa chọn bé", Toast.LENGTH_SHORT).show();
+            return;
         }
+
+        DiaryEntriesApi apiService = ApiClient.getDiaryEntriesApi(requireContext());
+        Call<ApiResponse<DiaryEntriesResponse>> call = apiService.getDiaryEntries(childId);
+
+        call.enqueue(new Callback<ApiResponse<DiaryEntriesResponse>>() {
+            @Override
+            public void onResponse(@NonNull Call<ApiResponse<DiaryEntriesResponse>> call, @NonNull Response<ApiResponse<DiaryEntriesResponse>> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
+                    DiaryEntriesResponse diaryResponse = response.body().getData();
+                    allEntries = diaryResponse.getDiaryEntries();
+
+                    if (allEntries != null && !allEntries.isEmpty()) {
+                        // Initially show all entries
+                        filterEntries("Tất cả");
+                    } else {
+                        allEntries.clear();
+                        filterEntries("Tất cả"); // Clear the adapter
+                        Toast.makeText(getContext(), "Chưa có mục nhật ký nào", Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(getContext(), "Lỗi khi tải nhật ký", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<ApiResponse<DiaryEntriesResponse>> call, @NonNull Throwable t) {
+                Toast.makeText(getContext(), "Lỗi mạng: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                Log.e("DIARY_DEBUG", "API Call Failed: ", t);
+            }
+        });
     }
 }
