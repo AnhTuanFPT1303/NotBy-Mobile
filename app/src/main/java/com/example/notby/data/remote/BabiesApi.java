@@ -2,8 +2,7 @@ package com.example.notby.data.remote;
 
 import com.example.notby.data.model.ApiResponse;
 import com.example.notby.data.model.Baby;
-
-import java.util.List;
+import com.example.notby.data.model.BabiesResponse;
 
 import retrofit2.Call;
 import retrofit2.http.Body;
@@ -15,7 +14,7 @@ import retrofit2.http.Query;
 
 public interface BabiesApi {
     @GET("babies")
-    Call<ApiResponse<List<Baby>>> findAll(@Query("parentId") String parentId);
+    Call<ApiResponse<BabiesResponse>> findAll(@Query("parentId") String parentId);
 
     @GET("babies")
     Call<Object> findAllRaw(@Query("parentId") String parentId);

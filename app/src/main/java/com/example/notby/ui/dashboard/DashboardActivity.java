@@ -22,6 +22,7 @@ import com.example.notby.R;
 import com.example.notby.data.TokenManager;
 import com.example.notby.data.model.Baby;
 import com.example.notby.data.model.ApiResponse;
+import com.example.notby.data.model.BabiesResponse;
 import com.example.notby.data.remote.ApiClient;
 import com.example.notby.data.remote.BabiesApi;
 import com.example.notby.ui.baby.BabyListActivity;
@@ -101,31 +102,36 @@ public class DashboardActivity extends AppCompatActivity implements NavigationVi
     }
 
     private void loadChildForCurrentUser() {
-        String userId = tokenManager.getUserId();
-        if (userId == null) return;
-
-        Log.d("DashboardActivity", "Loading babies for parentId=" + userId);
-
-        // Log token presence (masked) for debug
+        // Get JWT token and extract user ID from it
         String token = tokenManager.getToken();
         if (token == null || token.isEmpty()) {
-            Log.w("DashboardActivity", "No JWT token stored (token == null)");
-        } else {
-            String tail = token.length() > 8 ? token.substring(token.length() - 8) : token;
-            Log.d("DashboardActivity", "JWT present (masked) ****" + tail);
+            Log.w("DashboardActivity", "No JWT token stored - user not logged in");
+            return;
         }
 
-        // Use authenticated API client to include JWT if available (only one client/call)
-        BabiesApi babiesApiAuth = ApiClient.getBabiesApi(DashboardActivity.this);
+        // Extract user ID from JWT token
+        String userId = tokenManager.getUserIdFromToken();
+        if (userId == null) {
+            Log.e("DashboardActivity", "Failed to extract user ID from JWT token");
+            return;
+        }
+
+        Log.d("DashboardActivity", "Loading babies for parentId=" + userId + " (extracted from JWT)");
+
+        // Log token presence (masked) for debug
+        String tail = token.length() > 8 ? token.substring(token.length() - 8) : token;
+        Log.d("DashboardActivity", "JWT present (masked) ****" + tail);
+
+        // Use non-authenticated API client for baby operations
+        BabiesApi babiesApi = ApiClient.getBabiesApi();
 
         // If we have a saved childId, try fetching it directly
-        // Trong DashboardActivity.java -> loadChildForCurrentUser()
 
         String savedChildId = tokenManager.getChildId();
         if (savedChildId != null) {
             Log.d("DashboardActivity", "Found saved childId=" + savedChildId + ", fetching via /babies/{id}");
 
-            Call<ApiResponse<Baby>> byIdCall = babiesApiAuth.getById(savedChildId);
+            Call<ApiResponse<Baby>> byIdCall = babiesApi.getById(savedChildId);
 
             byIdCall.enqueue(new Callback<ApiResponse<Baby>>() {
                 @Override
@@ -140,84 +146,100 @@ public class DashboardActivity extends AppCompatActivity implements NavigationVi
                             Log.d("DashboardActivity", "Loaded baby by id=" + currentBabyId);
                         } else {
                             Log.w("DashboardActivity", "Response body missing 'data' field, falling back to findAll");
-                            fetchBabiesByParent(babiesApiAuth, userId);
+                            fetchBabiesByParent(babiesApi, userId);
                         }
                     } else {
                         Log.w("DashboardActivity", "getById didn't return valid baby, falling back to findAll");
-                        fetchBabiesByParent(babiesApiAuth, userId);
+                        fetchBabiesByParent(babiesApi, userId);
                     }
                 }
 
                 @Override
                 public void onFailure(@NonNull Call<ApiResponse<Baby>> call, @NonNull Throwable t) {
                     Log.e("DashboardActivity", "getById failed", t);
-                    fetchBabiesByParent(babiesApiAuth, userId);
+                    fetchBabiesByParent(babiesApi, userId);
                 }
             });
         } else {
-            fetchBabiesByParent(babiesApiAuth, userId);
+            fetchBabiesByParent(babiesApi, userId);
         }
     }
 
 
     // Trong file: DashboardActivity.java
 
-    private void fetchBabiesByParent(BabiesApi babiesApiAuth, String parentId) {
+    private void fetchBabiesByParent(BabiesApi babiesApi, String parentId) {
+        Log.d("DashboardActivity", "Fetching babies for parentId: " + parentId);
 
+        // Use non-authenticated API client to fetch babies directly
+        Call<ApiResponse<BabiesResponse>> call = babiesApi.findAll(parentId);
 
-        Call<ApiResponse<List<Baby>>> call = babiesApiAuth.findAll(parentId);
-
-
-        call.enqueue(new Callback<ApiResponse<List<Baby>>>() {
+        call.enqueue(new Callback<ApiResponse<BabiesResponse>>() {
             @Override
-            public void onResponse(@NonNull Call<ApiResponse<List<Baby>>> call, @NonNull Response<ApiResponse<List<Baby>>> response) {
+            public void onResponse(@NonNull Call<ApiResponse<BabiesResponse>> call, @NonNull Response<ApiResponse<BabiesResponse>> response) {
+                try {
+                    Log.d("DashboardActivity", "Response received - Status: " + response.isSuccessful() + ", Code: " + response.code());
 
-                if (response.isSuccessful() && response.body() != null) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        ApiResponse<BabiesResponse> apiResponse = response.body();
+                        Log.d("DashboardActivity", "ApiResponse status: " + apiResponse.isStatus());
 
+                        BabiesResponse babiesResponse = apiResponse.getData();
 
-                    ApiResponse<List<Baby>> apiResponse = response.body();
+                        if (babiesResponse != null) {
+                            Log.d("DashboardActivity", "BabiesResponse received, babies count: " +
+                                (babiesResponse.getBabies() != null ? babiesResponse.getBabies().size() : "null"));
 
+                            if (babiesResponse.getBabies() != null && !babiesResponse.getBabies().isEmpty()) {
+                                List<Baby> babies = babiesResponse.getBabies();
+                                Baby baby = babies.get(0);
 
-                    List<Baby> babies = apiResponse.getData();
+                                Log.d("DashboardActivity", "Baby received - ID: " + baby.getId() +
+                                    ", FirstName: " + baby.getFirstName() +
+                                    ", LastName: " + baby.getLastName());
 
-                    if (babies != null && !babies.isEmpty()) {
-                        Baby baby = babies.get(0);
-                        // persist child id
-                        tokenManager.saveChildId(baby.getId());
-                        currentBabyId = baby.getId();
-                        updateNavHeaderWithBaby(baby);
+                                // persist child id
+                                tokenManager.saveChildId(baby.getId());
+                                currentBabyId = baby.getId();
+                                updateNavHeaderWithBaby(baby);
+
+                                Log.d("DashboardActivity", "Successfully updated nav header with baby");
+                            } else {
+                                Log.w("DashboardActivity", "Babies list is null or empty");
+                                attemptRawInspect(babiesApi, parentId);
+                            }
+                        } else {
+                            Log.w("DashboardActivity", "BabiesResponse data is null");
+                            attemptRawInspect(babiesApi, parentId);
+                        }
                     } else {
-                        // Thành công, nhưng không có 'data' hoặc data rỗng
-                        Log.w("DashboardActivity", "Response body missing 'data' field or empty list");
-                        attemptRawInspect(babiesApiAuth, parentId);
+                        // Server returned error (4xx, 5xx)
+                        try (ResponseBody responseBody = response.errorBody()) {
+                            String err = responseBody != null ? responseBody.string() : "<empty>";
+                            Log.e("DashboardActivity", "API error fetching babies: code=" + response.code() + " body=" + err);
+                        } catch (IOException e) {
+                            Log.e("DashboardActivity", "Error reading response body", e);
+                        }
+                        attemptRawInspect(babiesApi, parentId);
                     }
-                } else {
-                    // Server trả về lỗi (4xx, 5xx)
-                    try (ResponseBody responseBody = response.errorBody()) {
-                        String err = responseBody != null ? responseBody.string() : "<empty>";
-                        Log.e("DashboardActivity", "API error fetching babies: code=" + response.code() + " body=" + err);
-                    } catch (IOException e) {
-                        Log.e("DashboardActivity", "Error reading response body", e);
-                    }
-                    attemptRawInspect(babiesApiAuth, parentId);
+                } catch (Exception e) {
+                    Log.e("DashboardActivity", "Exception in onResponse: " + e.getClass().getSimpleName() + " - " + e.getMessage(), e);
+                    Toast.makeText(DashboardActivity.this, "Error processing baby data: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
-            public void onFailure(@NonNull Call<ApiResponse<List<Baby>>> call, @NonNull Throwable t) {
-                // Lỗi mạng, hoặc lỗi GSON (như lỗi của bạn)
-                Log.e("DashboardActivity", "API call failure", t);
-                Toast.makeText(DashboardActivity.this, "Không thể tải thông tin bé: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-
-                // Không cần gọi attemptRawInspect ở đây nữa vì t đã chứa lỗi
+            public void onFailure(@NonNull Call<ApiResponse<BabiesResponse>> call, @NonNull Throwable t) {
+                Log.e("DashboardActivity", "API call failure: " + t.getClass().getSimpleName() + " - " + t.getMessage(), t);
+                Toast.makeText(DashboardActivity.this, "Network error loading baby data: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    private void attemptRawInspect(BabiesApi babiesApiAuth, String userId) {
+    private void attemptRawInspect(BabiesApi babiesApi, String userId) {
         Log.d("DashboardActivity", "Attempting fallback raw call to inspect response shape");
         try {
-            Call<Object> raw = babiesApiAuth.findAllRaw(userId);
+            Call<Object> raw = babiesApi.findAllRaw(userId);
             raw.enqueue(new Callback<Object>() {
                 @Override
                 public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {
@@ -246,35 +268,84 @@ public class DashboardActivity extends AppCompatActivity implements NavigationVi
     }
 
     private void updateNavHeaderWithBaby(Baby baby) {
-        NavigationView navigationView = findViewById(R.id.nav_view);
-        if (navigationView == null) return;
-        View header = navigationView.getHeaderView(0);
-        if (header == null) return;
+        try {
+            Log.d("DashboardActivity", "Updating nav header with baby: " + baby.getId());
 
-        TextView childName = header.findViewById(R.id.child_name);
-        TextView childBirthday = header.findViewById(R.id.child_birthday);
-        TextView childInitial = header.findViewById(R.id.child_initial);
+            NavigationView navigationView = findViewById(R.id.nav_view);
+            if (navigationView == null) {
+                Log.w("DashboardActivity", "NavigationView is null");
+                return;
+            }
 
-        if (childName != null) childName.setText(getString(R.string.child_name_template, baby.getFirstName(), baby.getLastName() != null ? baby.getLastName() : ""));
-        if (childBirthday != null) childBirthday.setText(baby.getDob() != null ? baby.getDob() : "");
-        if (childInitial != null) {
-            String initial = "";
-            if (baby.getFirstName() != null && !baby.getFirstName().isEmpty()) initial = baby.getFirstName().substring(0, 1).toUpperCase();
-            childInitial.setText(initial);
+            View header = navigationView.getHeaderView(0);
+            if (header == null) {
+                Log.w("DashboardActivity", "Navigation header view is null");
+                return;
+            }
+
+            TextView childName = header.findViewById(R.id.child_name);
+            TextView childBirthday = header.findViewById(R.id.child_birthday);
+            TextView childInitial = header.findViewById(R.id.child_initial);
+
+            // Safely handle baby data
+            String firstName = baby.getFirstName();
+            String lastName = baby.getLastName();
+            String dob = baby.getDob();
+
+            Log.d("DashboardActivity", "Baby data - FirstName: " + firstName + ", LastName: " + lastName + ", DOB: " + dob);
+
+            if (childName != null) {
+                try {
+                    String fullName;
+                    if (firstName != null && lastName != null) {
+                        fullName = getString(R.string.child_name_template, firstName, lastName);
+                    } else if (firstName != null) {
+                        fullName = firstName;
+                    } else {
+                        fullName = "Unknown";
+                    }
+                    childName.setText(fullName);
+                    Log.d("DashboardActivity", "Set child name: " + fullName);
+                } catch (Exception e) {
+                    Log.e("DashboardActivity", "Error setting child name: " + e.getMessage(), e);
+                    childName.setText(firstName != null ? firstName : "Unknown");
+                }
+            }
+
+            if (childBirthday != null) {
+                String birthday = dob != null ? dob : "";
+                childBirthday.setText(birthday);
+                Log.d("DashboardActivity", "Set child birthday: " + birthday);
+            }
+
+            if (childInitial != null) {
+                String initial = "";
+                if (firstName != null && !firstName.isEmpty()) {
+                    initial = firstName.substring(0, 1).toUpperCase();
+                }
+                childInitial.setText(initial);
+                Log.d("DashboardActivity", "Set child initial: " + initial);
+            }
+
+            // update current fields
+            currentBabyId = baby.getId();
+
+            // ensure header actions use current id
+            View childCard = header.findViewById(R.id.child_card_root);
+            View childAction = header.findViewById(R.id.child_action);
+            View.OnClickListener headerClick = v -> {
+                Intent intent = new Intent(DashboardActivity.this, BabyListActivity.class);
+                startActivity(intent);
+            };
+            if (childCard != null) childCard.setOnClickListener(headerClick);
+            if (childAction != null) childAction.setOnClickListener(headerClick);
+
+            Log.d("DashboardActivity", "Successfully updated nav header");
+
+        } catch (Exception e) {
+            Log.e("DashboardActivity", "Exception in updateNavHeaderWithBaby: " + e.getClass().getSimpleName() + " - " + e.getMessage(), e);
+            Toast.makeText(this, "Error updating baby information: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
-
-        // update current fields
-        currentBabyId = baby.getId();
-
-        // ensure header actions use current id
-        View childCard = header.findViewById(R.id.child_card_root);
-        View childAction = header.findViewById(R.id.child_action);
-        View.OnClickListener headerClick = v -> {
-            Intent intent = new Intent(DashboardActivity.this, BabyListActivity.class);
-            startActivity(intent);
-        };
-        if (childCard != null) childCard.setOnClickListener(headerClick);
-        if (childAction != null) childAction.setOnClickListener(headerClick);
     }
 
     private void showFooterPopupMenu(View view) {

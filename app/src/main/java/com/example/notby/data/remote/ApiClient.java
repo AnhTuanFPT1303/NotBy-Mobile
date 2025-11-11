@@ -2,7 +2,6 @@ package com.example.notby.data.remote;
 
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
-import com.example.notby.data.remote.BabiesApi;
 import android.content.Context;
 import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
@@ -10,6 +9,8 @@ import okhttp3.Request;
 import okhttp3.Response;
 import java.io.IOException;
 import com.example.notby.data.TokenManager;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 public class ApiClient {
     private static final String BASE_URL = "https://notby-be-8q9y.onrender.com/";
@@ -25,9 +26,15 @@ public class ApiClient {
 
     public static Retrofit getClient() {
         if (retrofit == null) {
+            // Create Gson with lenient parsing to handle potential field mismatches
+            Gson gson = new GsonBuilder()
+                    .setLenient()
+                    .serializeNulls()
+                    .create();
+
             retrofit = new Retrofit.Builder()
                     .baseUrl(BASE_URL)
-                    .addConverterFactory(GsonConverterFactory.create())
+                    .addConverterFactory(GsonConverterFactory.create(gson))
                     .build();
         }
         return retrofit;
@@ -56,10 +63,16 @@ public class ApiClient {
                 })
                 .build();
 
+        // Create Gson with lenient parsing to handle potential field mismatches
+        Gson gson = new GsonBuilder()
+                .setLenient()
+                .serializeNulls()
+                .create();
+
         return new Retrofit.Builder()
                 .baseUrl(BASE_URL)
                 .client(client)
-                .addConverterFactory(GsonConverterFactory.create())
+                .addConverterFactory(GsonConverterFactory.create(gson))
                 .build();
     }
 

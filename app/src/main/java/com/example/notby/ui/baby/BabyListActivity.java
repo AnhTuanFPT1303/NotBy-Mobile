@@ -16,6 +16,7 @@ import com.example.notby.R;
 import com.example.notby.data.TokenManager;
 import com.example.notby.data.model.ApiResponse;
 import com.example.notby.data.model.Baby;
+import com.example.notby.data.model.BabiesResponse;
 
 import com.example.notby.data.remote.ApiClient;
 import com.example.notby.data.remote.BabiesApi;
@@ -62,23 +63,34 @@ public class BabyListActivity extends AppCompatActivity implements BabyAdapter.O
     }
 
     private void loadBabies() {
-        String parentId = tokenManager.getUserId();
-        if (parentId == null) {
-            Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show();
+        // Get JWT token and extract user ID from it
+        String token = tokenManager.getToken();
+        if (token == null || token.isEmpty()) {
+            Toast.makeText(this, "User not logged in - No token", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        BabiesApi apiService = ApiClient.getBabiesApi(this);
-        Call<ApiResponse<List<Baby>>> call = apiService.findAll(parentId);
+        // Extract user ID from JWT token
+        String parentId = tokenManager.getUserIdFromToken();
+        if (parentId == null) {
+            Toast.makeText(this, "User not logged in - Invalid token", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-        call.enqueue(new Callback<ApiResponse<List<Baby>>>() {
+        BabiesApi apiService = ApiClient.getBabiesApi(); // Use non-authenticated client
+        Call<ApiResponse<BabiesResponse>> call = apiService.findAll(parentId);
+
+        call.enqueue(new Callback<ApiResponse<BabiesResponse>>() {
             @Override
-            public void onResponse(Call<ApiResponse<List<Baby>>> call, Response<ApiResponse<List<Baby>>> response) {
+            public void onResponse(Call<ApiResponse<BabiesResponse>> call, Response<ApiResponse<BabiesResponse>> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    babyList = response.body().getData();
-                    if (babyList != null && !babyList.isEmpty()) {
-                        adapter = new BabyAdapter(babyList, BabyListActivity.this);
-                        recyclerView.setAdapter(adapter);
+                    BabiesResponse babiesResponse = response.body().getData();
+                    if (babiesResponse != null && babiesResponse.getBabies() != null) {
+                        babyList = babiesResponse.getBabies();
+                        if (!babyList.isEmpty()) {
+                            adapter = new BabyAdapter(babyList, BabyListActivity.this);
+                            recyclerView.setAdapter(adapter);
+                        }
                     }
                 } else {
                     Toast.makeText(BabyListActivity.this, "Failed to load babies", Toast.LENGTH_SHORT).show();
@@ -86,7 +98,7 @@ public class BabyListActivity extends AppCompatActivity implements BabyAdapter.O
             }
 
             @Override
-            public void onFailure(Call<ApiResponse<List<Baby>>> call, Throwable t) {
+            public void onFailure(Call<ApiResponse<BabiesResponse>> call, Throwable t) {
                 Toast.makeText(BabyListActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
@@ -103,7 +115,7 @@ public class BabyListActivity extends AppCompatActivity implements BabyAdapter.O
     }
 
     private void deleteBaby(Baby baby) {
-        BabiesApi apiService = ApiClient.getBabiesApi(this);
+        BabiesApi apiService = ApiClient.getBabiesApi(); // Use non-authenticated client
         Call<ApiResponse<Void>> call = apiService.deleteBaby(baby.getId());
 
         call.enqueue(new Callback<ApiResponse<Void>>() {
