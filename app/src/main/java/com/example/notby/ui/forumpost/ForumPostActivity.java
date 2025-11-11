@@ -26,6 +26,7 @@ import com.example.notby.data.model.ForumPost;
 import com.example.notby.data.model.MediaFile;
 import com.example.notby.data.remote.ApiClient;
 import com.example.notby.ui.dashboard.DashboardActivity;
+import com.example.notby.ui.library.LibraryActivity;
 
 
 import java.io.File;
@@ -62,21 +63,20 @@ public class ForumPostActivity extends AppCompatActivity {
     private TokenManager tokenManager;
 
     @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_forum_post);
 
-        // Initialize TokenManager
-        tokenManager = new TokenManager(this);
-
+        // Setup toolbar with back button
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
-        // Thêm nút quay lại (Back) trên Toolbar
         if (getSupportActionBar() != null) {
+            getSupportActionBar().setTitle("Diễn đàn");
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setDisplayShowHomeEnabled(true);
         }
+
+        // Initialize TokenManager
+        tokenManager = new TokenManager(this);
 
         recyclerView = findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -101,9 +101,8 @@ public class ForumPostActivity extends AppCompatActivity {
     // ===================================================================
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.drawer_nav_menu, menu); // Dùng file menu của bạn
-        return true; // Trả về true để menu được hiển thị
+        getMenuInflater().inflate(R.menu.forum_toolbar_menu, menu);
+        return true;
     }
 
     // ===================================================================
@@ -115,45 +114,31 @@ public class ForumPostActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int itemId = item.getItemId();
 
-        // Xử lý nút quay lại (nút home/up)
         if (itemId == android.R.id.home) {
-            finish(); // Đóng activity hiện tại và quay về màn hình trước
+            // Handle the back button
+            onBackPressed();
+            return true;
+        } else if (itemId == R.id.action_dashboard) {
+            // Navigate to Dashboard
+            Intent dashboardIntent = new Intent(this, DashboardActivity.class);
+            dashboardIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP); // Clear the activity stack
+            startActivity(dashboardIntent);
+            finish(); // Close this activity
+            return true;
+        } else if (itemId == R.id.action_library) {
+            // Navigate to Library
+            Intent libraryIntent = new Intent(this, LibraryActivity.class);
+            startActivity(libraryIntent);
+            return true;
+        } else if (itemId == R.id.action_development_diary) {
+            // Navigate to Dashboard with diary fragment
+            Intent dashboardIntent = new Intent(this, DashboardActivity.class);
+            dashboardIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            dashboardIntent.putExtra("open_diary", true);
+            startActivity(dashboardIntent);
+            finish();
             return true;
         }
-
-        // ======================================================
-        // === PHẦN SỬA LỖI - THAY TOAST BẰNG INTENT ===
-        // ======================================================
-
-        if (itemId == R.id.nav_overview) {
-            // TẠO Ý ĐỊNH (INTENT) ĐỂ MỞ DASHBOARD ACTIVITY
-            Intent intent = new Intent(ForumPostActivity.this, DashboardActivity.class);
-            startActivity(intent); // BẮT ĐẦU ACTIVITY MỚI
-            return true; // Trả về true để báo rằng sự kiện đã được xử lý
-
-        } else if (itemId == R.id.nav_stats) {
-            // Tương tự, nếu bạn có StatsActivity
-            // Intent intent = new Intent(ForumPostActivity.this, StatsActivity.class);
-            // startActivity(intent);
-            Toast.makeText(this, "Chức năng Thống kê sẽ được phát triển sau!", Toast.LENGTH_SHORT).show();
-            return true;
-
-
-        } else if (itemId == R.id.nav_development_diary) {
-            // Nếu bạn có DevelopmentDiaryActivity
-            // Intent intent = new Intent(ForumPostActivity.this, DevelopmentDiaryActivity.class);
-            // startActivity(intent);
-            Toast.makeText(this, "Chức năng Nhật ký sẽ được phát triển sau!", Toast.LENGTH_SHORT).show();
-            return true;
-
-        } else if (itemId == R.id.nav_health_tracking) {
-            // Nếu bạn có HealthTrackingActivity
-            // Intent intent = new Intent(ForumPostActivity.this, HealthTrackingActivity.class);
-            // startActivity(intent);
-            Toast.makeText(this, "Chức năng Theo dõi sức khỏe sẽ được phát triển sau!", Toast.LENGTH_SHORT).show();
-            return true;
-        }
-        // ... các mục menu khác
 
         return super.onOptionsItemSelected(item);
     }
@@ -226,8 +211,7 @@ public class ForumPostActivity extends AppCompatActivity {
                                     deleteTempFile(uploadFile);
                                     if (resp2.isSuccessful() && resp2.body() != null && resp2.body().isStatus()) {
                                         MediaFile created = resp2.body().getData();
-                                        String fileId = created != null ? created.getId() : null;
-                                        createForumPostAfterFile(title, content, fileId);
+                                        createForumPostAfterFile(title, content, created);
                                     } else {
                                         Toast.makeText(ForumPostActivity.this, "Failed to create media file", Toast.LENGTH_SHORT).show();
                                         resetPostButton();
@@ -279,7 +263,7 @@ public class ForumPostActivity extends AppCompatActivity {
         }
     }
 
-    private void createForumPostAfterFile(String title, String content, String fileId) {
+    private void createForumPostAfterFile(String title, String content, MediaFile file) {
         String authorId = getAuthorId();
         if (authorId == null || authorId.isEmpty()) {
             Toast.makeText(this, "Please log in to create a post", Toast.LENGTH_SHORT).show();
@@ -288,7 +272,9 @@ public class ForumPostActivity extends AppCompatActivity {
         }
 
         ForumPost post = new ForumPost(title, content, authorId);
-        if (fileId != null) post.setFileElement(new com.google.gson.JsonPrimitive(fileId));
+        if (file != null) {
+            post.setFileId(file.getId()); // Set only the file ID for API request
+        }
 
         ApiClient.getForumPostApi().create(post).enqueue(new Callback<ApiResponse<ForumPost>>() {
             @Override
@@ -347,12 +333,9 @@ public class ForumPostActivity extends AppCompatActivity {
 
     private String getAuthorId() {
         String userId = tokenManager.getUserId();
-        Log.d(TAG, "getAuthorId() - Retrieved userId: " + userId);
         if (userId == null || userId.isEmpty()) {
-            Log.e(TAG, "getAuthorId() - User ID is null or empty!");
             return null;
         }
-        Log.d(TAG, "getAuthorId() - Returning userId: " + userId);
         return userId;
     }
 
@@ -403,5 +386,11 @@ public class ForumPostActivity extends AppCompatActivity {
                         Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    @Override
+    public boolean onSupportNavigateUp() {
+        onBackPressed();
+        return true;
     }
 }

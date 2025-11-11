@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
     <application
         android:allowBackup="true"
@@ -38,6 +39,8 @@
             android:parentActivityName=".ui.dashboard.DashboardActivity" />
         <activity android:name=".ui.baby.AddBabyActivity"
             android:parentActivityName=".ui.baby.BabyListActivity" />
+        <activity android:name=".ui.library.LibraryActivity"
+            android:parentActivityName=".ui.dashboard.DashboardActivity" />
 
     </application>
 

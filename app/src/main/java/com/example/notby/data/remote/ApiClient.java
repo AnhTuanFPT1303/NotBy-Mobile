@@ -22,6 +22,7 @@ public class ApiClient {
     private static CloudinaryApi cloudinaryApi = null;
     private static BabiesApi babiesApi = null;
     private static DiaryEntriesApi diaryEntriesApi = null;
+    private static ArticleApi articleApi = null;
 
     private static EventApi eventApi = null;
     public static Retrofit getClient() {
@@ -133,5 +134,12 @@ public class ApiClient {
             cloudinaryApi = getClient().create(CloudinaryApi.class);
         }
         return cloudinaryApi;
+    }
+
+    public static ArticleApi getArticleApi() {
+        if (articleApi == null) {
+            articleApi = getClient().create(ArticleApi.class);
+        }
+        return articleApi;
     }
 }
